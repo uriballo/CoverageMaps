@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\GUI.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ImageDisplay.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,10 +67,5 @@
     <CudaCompile Include="src\FeedbackExpansion.cpp">
       <Filter>Source Files</Filter>
     </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="src\GUI.resx">
-      <Filter>Resource Files</Filter>
-    </EmbeddedResource>
   </ItemGroup>
 </Project>

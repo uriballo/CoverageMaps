@@ -158,7 +158,7 @@ namespace CUDACoverageMaps {
 			this->outputImageTextBox->Name = L"outputImageTextBox";
 			this->outputImageTextBox->Size = System::Drawing::Size(394, 34);
 			this->outputImageTextBox->TabIndex = 5;
-			this->outputImageTextBox->Text = L"outputImage1";
+			this->outputImageTextBox->Text = L"output1";
 			// 
 			// outputName
 			// 

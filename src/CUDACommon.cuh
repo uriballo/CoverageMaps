@@ -149,7 +149,7 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		bool isWall = boundary[tid];
 		float pixelValue = distanceMap[tid].first;
 
-		if (isWall || pixelValue < 5) {
+		if (isWall || pixelValue < 2.5) {
 			outputR[tid] = 0.0f;
 			outputG[tid] = 0.0f;
 			outputB[tid] = 0.0f;
@@ -157,20 +157,27 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		else {
 			// Set different colors based on the pixel value.
 			if (pixelValue < (radius + FLT_MIN)) {
-				int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
+			//	int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
 				float R, G, B;
 				//palette1(id, R, G, B);
-				R = 96.0f;
-				G = 108.0f;
-				B = 56.0f;
-				outputR[tid] = R;
-				outputG[tid] = G;
-				outputB[tid] = B;
+
+				float tint = 0.75 *( 1.0 - pixelValue / radius);
+				R = 40.0f;
+				G = 54.0f;
+				B = 24.0f;
+
+				R -= (  R) * tint;
+				G -= (  G) * tint;
+				B -= (  B) * tint;
+
+				outputR[tid] = R/255;
+				outputG[tid] = G/255;
+				outputB[tid] = B/255;
 			}
 			else {
-				outputR[tid] = 1.0f;
-				outputG[tid] = 1.0f;
-				outputB[tid] = 1.0f;
+				outputR[tid] = 255.0f/255;
+				outputG[tid] = 255.0f/255;
+				outputB[tid] = 255.0f/255;
 			}
 		}
 	}

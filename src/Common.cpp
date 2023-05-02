@@ -122,7 +122,6 @@ cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int n
 	return outputImage;
 }
 
-
 void IO::storeBWImage(const cv::Mat& mat, std::string fileName) {
 	cv::Mat floatMat8UC1;
 	mat.convertTo(floatMat8UC1, CV_8UC1, 255.0);
@@ -134,9 +133,17 @@ void IO::storeBWImage(const cv::Mat& mat, std::string fileName) {
 	cv::imwrite(filePath, floatMat8UC1, compression_params);
 }
 
-void IO::showRGB(const cv::Mat& outputImage){
-	cv::imwrite("output/ie.png", outputImage);
-	cv::waitKey(0);
+void IO::storeRGB(const cv::Mat& imageRGB, std::string filePath){
+	// Convert the floating-point image to 8-bit integer
+	cv::Mat image8Bit;
+	cv::cvtColor(imageRGB, image8Bit, cv::COLOR_RGB2BGR);
+	image8Bit.convertTo(image8Bit, CV_8U, 255.0);
+
+	// Save the image as a PNG file
+	std::vector<int> compression_params;
+	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9); // Maximum compression
+	cv::imwrite(filePath, image8Bit, compression_params);
 }
 
 void IO::showHeatMap(const float* heatMap, int rows, int cols) {

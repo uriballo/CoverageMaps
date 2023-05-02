@@ -44,7 +44,7 @@ namespace IO {
 
 	void storeBWImage(const cv::Mat& mat, std::string windowTitle);
 
-	void showRGB(const cv::Mat& outputImage);
+	void storeRGB(const cv::Mat& imageRGB, std::string filePath);
 
 	void showHeatMap(const float* heatMap, int rows, int cols);
 }

@@ -20,13 +20,17 @@ void runExactExpansion(config conf) {
 
 	if (conf.showResults) {
 		float* processedResult = UTILS::processResults_(boundary, coverageMap, conf.radius, rows, cols);
+		
+		cv::Mat processedResultsRGB = UTILS::processResultsRGB(boundary, sourceDistribution, coverageMap, conf.radius, rows, cols, conf.numSources);
+
 		cv::Mat map = IO::floatToCV(processedResult, rows, cols);
+		
 		IO::storeBWImage(map, conf.outputFileName);
+		IO::storeRGB(processedResultsRGB, "output/test.png");
 
 		// add if verbose
 		//IO::writeFloatMatrix(processedResult, rows, cols, "processed-results");
 
-		//UTILS::showRGB(boundary, sourceDistribution, coverageMap, conf.radius, rows, cols);
 		delete[] processedResult;
 	}
 

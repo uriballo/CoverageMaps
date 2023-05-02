@@ -135,7 +135,7 @@
     <CudaCompile Include="src\FeedbackExpansion.cpp" />
     <CudaCompile Include="src\EuclideanExpansion.cpp" />
     <CudaCompile Include="src\Common.cpp" />
-    <ClCompile Include="GUI.cpp" />
+    <ClCompile Include="src\GUI.cpp" />
     <CudaCompile Include="src\EuclideanExpansionK.cu" />
     <CudaCompile Include="src\FeedbackExpansionK.cu" />
   </ItemGroup>
@@ -150,14 +150,9 @@
     </ClInclude>
     <CudaCompile Include="src\CUDACommon.cuh" />
     <CudaCompile Include="src\CUDAPair.cuh" />
-    <ClInclude Include="GUI.h">
-      <FileType>CppForm</FileType>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="GUI.resx">
-      <DependentUpon>GUI.h</DependentUpon>
-    </EmbeddedResource>
+    <EmbeddedResource Include="src\GUI.resx" />
     <EmbeddedResource Include="src\ImageDisplay.resx">
       <DependentUpon>src\ImageDisplay.h</DependentUpon>
     </EmbeddedResource>

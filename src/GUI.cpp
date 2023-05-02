@@ -1,5 +1,5 @@
 #include "GUI.h"
-#include "src/Common.h"
+#include "Common.h"
 
 using namespace System;
 using namespace System::Windows::Forms;

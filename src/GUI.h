@@ -1,7 +1,7 @@
 #pragma once
-#include "src/EuclideanExpansion.h"
-#include "src/FeedbackExpansion.h"
-#include "src/ImageDisplay.h"
+#include "EuclideanExpansion.h"
+#include "FeedbackExpansion.h"
+#include "ImageDisplay.h"
 #include <msclr/marshal_cppstd.h>
 
 using namespace msclr::interop;

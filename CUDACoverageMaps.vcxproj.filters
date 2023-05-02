@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GUI.cpp">
+    <ClCompile Include="src\GUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ImageDisplay.cpp">
@@ -23,9 +23,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -42,6 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ImageDisplay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -67,5 +67,10 @@
     <CudaCompile Include="src\FeedbackExpansion.cpp">
       <Filter>Source Files</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="src\GUI.resx">
+      <Filter>Resource Files</Filter>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

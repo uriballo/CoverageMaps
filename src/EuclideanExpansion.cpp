@@ -23,7 +23,7 @@ void runEuclideanExpansion(config conf) {
 
 		float* processedResult = UTILS::processResults(boundary, coverageMap, conf.radius, rows, cols);
 		cv::Mat map = IO::floatToCV(processedResult, rows, cols);
-		IO::showBW(map, "Coverage Map");
+		IO::storeBWImage(map, "Coverage Map");
 
 		delete[] processedResult;
 	}

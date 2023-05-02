@@ -7,25 +7,8 @@ void runExactExpansion(config conf) {
 
 	int numElements = rows * cols;
 	
-	/*
-	float* hostBlockIDs = new float[numElements];
-	float* deviceBlockIDs;
-
-	CUDA::allocate(deviceBlockIDs, numElements);
-
-	dim3 threadsPerBlock(16, 16);
-	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-	getBlockID<<<blocksPerGrid, threadsPerBlock>>>(deviceBlockIDs, rows, cols);
-	CUDA::synchronize();
-
-	CUDA::copyDeviceToHost(hostBlockIDs, deviceBlockIDs, numElements);
-
-	IO::writeFloatMatrix(hostBlockIDs, rows, cols, "blockids");
-
-	*/
-	
-	IO::writeBoolMatrix(boundary, rows, cols, "boundary");
+	// add if verbose
+	//IO::writeBoolMatrix(boundary, rows, cols, "boundary");
 
 	std::cout << "Domain dimensions: (" << cols << " x " << rows << ")" << std::endl;
 
@@ -38,9 +21,11 @@ void runExactExpansion(config conf) {
 	if (conf.showResults) {
 		float* processedResult = UTILS::processResults_(boundary, coverageMap, conf.radius, rows, cols);
 		cv::Mat map = IO::floatToCV(processedResult, rows, cols);
-		IO::showBW(map, "Coverage Map");
+		IO::storeBWImage(map, conf.outputFileName);
 
-		IO::writeFloatMatrix(processedResult, rows, cols, "processed-results");
+		// add if verbose
+		//IO::writeFloatMatrix(processedResult, rows, cols, "processed-results");
+
 		//UTILS::showRGB(boundary, sourceDistribution, coverageMap, conf.radius, rows, cols);
 		delete[] processedResult;
 	}

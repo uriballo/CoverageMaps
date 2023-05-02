@@ -123,23 +123,15 @@ cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int n
 }
 
 
-void IO::showBW(const cv::Mat& mat, std::string windowTitle) {
-	//cv::Mat dst;
-	// Convert input matrix from BGR to RGB color space
-	//cv::cvtColor(mat, dst, cv::COLOR_BGR2RGB);
-
+void IO::storeBWImage(const cv::Mat& mat, std::string fileName) {
 	cv::Mat floatMat8UC1;
 	mat.convertTo(floatMat8UC1, CV_8UC1, 255.0);
 	std::vector<int> compression_params;
 	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
 	compression_params.push_back(9); // PNG compression level, 0-9 (9 being highest compression)
 
-	cv::imwrite("output/outputImage.png", floatMat8UC1, compression_params);
-	//cv::imwrite("output/outputImage.pfm", mat);
-	// Display converted image on screen
-	//cv::imshow(windowTitle, dst);
-
-	//cv::waitKey(0);
+	std::string filePath = "output/" + fileName + ".png";
+	cv::imwrite(filePath, floatMat8UC1, compression_params);
 }
 
 void IO::showRGB(const cv::Mat& outputImage){

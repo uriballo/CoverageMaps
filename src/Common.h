@@ -13,6 +13,7 @@
 
 struct config {
 	std::string domainPath;
+	std::string outputFileName;
 
 	float radius;
 
@@ -41,7 +42,7 @@ namespace IO {
 
 	cv::Mat createRGBImage(float* outputR, float* outputG, float* outputB, int numRows, int numCols);
 
-	void showBW(const cv::Mat& mat, std::string windowTitle);
+	void storeBWImage(const cv::Mat& mat, std::string windowTitle);
 
 	void showRGB(const cv::Mat& outputImage);
 

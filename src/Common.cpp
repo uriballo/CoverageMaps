@@ -108,14 +108,42 @@ cv::Mat IO::floatToCV(const float* array, int rows, int cols) {
 	return mat;
 }
 
+cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int numRows, int numCols) {
+	// Initialize the output matrices.
+	cv::Mat outputImage(numRows, numCols, CV_32FC3, cv::Scalar(0.0f, 0.0f, 0.0f));
+
+	// Copy the data from the output arrays to the corresponding channels of the output matrix.
+	std::vector<cv::Mat> channels;
+	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputB));
+	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputG));
+	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputR));
+	cv::merge(channels, outputImage);
+
+	return outputImage;
+}
+
+
 void IO::showBW(const cv::Mat& mat, std::string windowTitle) {
-	cv::Mat dst;
+	//cv::Mat dst;
 	// Convert input matrix from BGR to RGB color space
-	cv::cvtColor(mat, dst, cv::COLOR_BGR2RGB);
+	//cv::cvtColor(mat, dst, cv::COLOR_BGR2RGB);
 
+	cv::Mat floatMat8UC1;
+	mat.convertTo(floatMat8UC1, CV_8UC1, 255.0);
+	std::vector<int> compression_params;
+	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9); // PNG compression level, 0-9 (9 being highest compression)
+
+	cv::imwrite("output/outputImage.png", floatMat8UC1, compression_params);
+	//cv::imwrite("output/outputImage.pfm", mat);
 	// Display converted image on screen
-	cv::imshow(windowTitle, dst);
+	//cv::imshow(windowTitle, dst);
 
+	//cv::waitKey(0);
+}
+
+void IO::showRGB(const cv::Mat& outputImage){
+	cv::imwrite("output/ie.png", outputImage);
 	cv::waitKey(0);
 }
 
@@ -215,6 +243,48 @@ float* UTILS::processResults_(const bool* boundary, const CUDAPair<float, int>* 
 	return result;
 }
 
+cv::Mat UTILS::processResultsRGB(const bool* boundary, const int* sources, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols, int numSources) {
+	int numElements = rows * cols;
+	
+	bool* deviceBoundary;
+	CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
+	
+	int* deviceSources;
+	CUDA::allocateAndCopy(deviceSources, sources, numSources);
+
+	CUDAPair<float, int>* deviceCoverageMap;
+	CUDA::allocateAndCopy(deviceCoverageMap, coverageMap, numElements);
+
+	float* outputR;
+	float* outputG; 
+	float* outputB;
+	CUDA::allocate(outputR, numElements);
+	CUDA::allocate(outputG, numElements);
+	CUDA::allocate(outputB, numElements);
+
+	dim3 threadsPerBlock(16, 16);
+	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+	processResultsRGB_ << < blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceSources, deviceCoverageMap, outputR, outputG, outputB, radius, numElements, cols);
+	CUDA::synchronize();
+
+	float* R = new float[numElements];
+	float* G = new float[numElements];
+	float* B = new float[numElements];
+
+	CUDA::copyDeviceToHost(R, outputR, numElements);
+	CUDA::copyDeviceToHost(G, outputG, numElements);
+	CUDA::copyDeviceToHost(B, outputB, numElements);
+
+	cv::Mat colorMap = IO::createRGBImage(R, G, B, rows, cols);
+
+	CUDA::free(outputR);
+	CUDA::free(outputG);
+	CUDA::free(outputB);
+
+	return colorMap;
+}
+
 void UTILS::initializeCoverageMap(CUDAPair<float, int>* coverageMap, const float initDist, const int initPredecessor, const int size) {
 	for (int i = 0; i < size; i++)
 		coverageMap[i] = CUDAPair<float, int>{ initDist, initPredecessor };
@@ -222,6 +292,7 @@ void UTILS::initializeCoverageMap(CUDAPair<float, int>* coverageMap, const float
 
 void UTILS::initializeSources(CUDAPair<float, int>* coverageMap, const int* sourceDistribution, const int numSources, const int cols)
 {
+	int j = -1;
 	for (int i = 0; i < 2 * numSources; i += 2) {
 		int index = sourceDistribution[i + 1] * cols + sourceDistribution[i];
 		coverageMap[index].first = 0.0f;

@@ -39,7 +39,11 @@ namespace IO {
 
 	cv::Mat floatToCV(const float* array, int rows, int cols);
 
+	cv::Mat createRGBImage(float* outputR, float* outputG, float* outputB, int numRows, int numCols);
+
 	void showBW(const cv::Mat& mat, std::string windowTitle);
+
+	void showRGB(const cv::Mat& outputImage);
 
 	void showHeatMap(const float* heatMap, int rows, int cols);
 }
@@ -111,6 +115,8 @@ namespace UTILS {
 	float* processResults(const bool* boundary, const float* coverageMap, const float radius, int rows, int cols);
 
 	float* processResults_(const bool* boundary, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols);
+
+	cv::Mat processResultsRGB(const bool* boundary, const int* sources, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols, int numSources);
 
 	void initializeCoverageMap(CUDAPair<float, int>* coverageMap, const float initDist, const int initPredecessor, const int size);
 

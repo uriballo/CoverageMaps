@@ -24,6 +24,11 @@ __device__ __inline__ int getThreadId() {
 	return threadId;
 }
 
+__device__ __inline__ void get2DThreadId(int& tidX, int& tidY) {
+	tidX = blockIdx.x * blockDim.x + threadIdx.x;
+	tidY = blockIdx.y * blockDim.y + threadIdx.y;
+}
+
 __device__ __inline__ int det(int a11, int a12, int a21, int a22) {
 	return a11 * a22 - a12 * a21;
 }
@@ -81,6 +86,112 @@ __global__ __inline__ void processResultsBW_(const bool* boundary, const CUDAPai
 	}
 }
 
+/*
+__device__ __inline__ void palette1(int id, float& R, float& G, float& B) {
+	switch (id) {
+	case 1:
+		R = 96.0f;
+		G = 108.0f;
+		B = 56.0f;
+		break;
+	case 2:
+		R = 40.0f;
+		G = 54.0f;
+		B = 24.0f;
+		break;
+	case 3:
+		R = 254.0f;
+		G = 250.0f;
+		B = 224.0f;
+		break;
+	case 4:
+		R = 221.0f;
+		G = 161.0f;
+		B = 94.0f;
+		break;
+	case 5:
+		R = 188.0f;
+		G = 108.0f;
+		B = 37.0f;
+		break;
+	}
+}
+
+__device__ __inline__ int pointOrigin(const CUDAPair<float, int>* distanceMap, const int* sources, int pointIndex, int cols) {
+	int currentPoint = pointIndex;
+	int nextGoal = distanceMap[currentPoint].second;
+
+	while (nextGoal != currentPoint) {
+		currentPoint = nextGoal;
+		nextGoal = distanceMap[currentPoint].second;
+	}
+
+	int j = 0, i = 0;
+	int x, y;
+	indexToCoords(currentPoint, x, y, cols);
+
+	while (x != sources[i] && y != sources[i + 1]) {
+		i += 2;
+		j++;
+	}
+
+	return j;
+}
+*/
+
+__global__ __inline__ void processResultsRGB_(const bool* boundary, const int* sources, const CUDAPair<float, int>* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
+	// Determine pixel to be processed by thread.
+	int tid = getThreadId();
+
+	// Check that the value is within the boundaries.
+	if (tid < numElements) {
+
+		bool isWall = boundary[tid];
+		float pixelValue = distanceMap[tid].first;
+
+		if (isWall || pixelValue < 5) {
+			outputR[tid] = 0.0f;
+			outputG[tid] = 0.0f;
+			outputB[tid] = 0.0f;
+		}
+		else {
+			// Set different colors based on the pixel value.
+			if (pixelValue < (radius + FLT_MIN)) {
+				int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
+				float R, G, B;
+				//palette1(id, R, G, B);
+				R = 96.0f;
+				G = 108.0f;
+				B = 56.0f;
+				outputR[tid] = R;
+				outputG[tid] = G;
+				outputB[tid] = B;
+			}
+			else {
+				outputR[tid] = 1.0f;
+				outputG[tid] = 1.0f;
+				outputB[tid] = 1.0f;
+			}
+		}
+	}
+}
+
+__global__ __inline__ void getBlockID(float* blockIDs, int rows, int cols) {
+	// Determine pixel to be processed by thread.
+	//int tid = getThreadId();
+
+	int tidX, tidY;
+	get2DThreadId(tidX, tidY);
+
+	// Check that the value is within the boundaries.
+	if (tidX < cols && tidY < rows) {
+		int blockId = blockIdx.y * gridDim.x + blockIdx.x;
+	
+		int tid = coordsToIndex(tidX, tidY, cols);
+		blockIDs[tid] = static_cast<float>(blockId);
+	}
+}
+
 __global__ __inline__ void processResultsBW(const bool* boundary, const float* distanceMap, float* output, const float radius, int numElements) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
@@ -101,7 +212,7 @@ __global__ __inline__ void processResultsBW(const bool* boundary, const float* d
 	}
 }
 
-__device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelIndex, int cols) {
+__device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelIndex, int rows, int cols) {
 	int x = 0, y = 0;
 	indexToCoords(pixelIndex, x, y, cols);
 
@@ -110,14 +221,15 @@ __device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelI
 			int newX = x + i;
 			int newY = y + j;
 
-			//bool xInBounds = newX < cols && newX >= 0;
-			//bool yInBounds = newY < rows && newY >= 0;
-			//bool inBounds = xInBounds && yInBounds;
+			bool xInBounds = newX < cols && newX >= 0;
+			bool yInBounds = newY < rows && newY >= 0;
+			bool inBounds = xInBounds && yInBounds;
 
 			int neighIndex = coordsToIndex(newX, newY, cols);
 
-			if (boundary[neighIndex])
-				return true;
+			if(inBounds)
+				if (boundary[neighIndex])
+					return true;
 		}
 	}
 
@@ -151,10 +263,6 @@ __device__ __inline__ float computeDistance(CUDAPair<float, int>* distanceMap, i
 	int nextGoal = distanceMap[currentPoint].second;
 
 	while (nextGoal != currentPoint) {
-
-		if (nextGoal == -1)
-			return -1;
-
 		distance += indexDistance(currentPoint, nextGoal, cols);
 		currentPoint = nextGoal;
 		nextGoal = distanceMap[currentPoint].second;
@@ -163,21 +271,35 @@ __device__ __inline__ float computeDistance(CUDAPair<float, int>* distanceMap, i
 	return distance;
 }
 
-__device__ __inline__ float stepDistance(CUDAPair<float, int>* distanceMap, int pointIndex, int cols) {
-	float distance = 0.0f;
+__device__ __inline__ bool visibilityTest(const bool* domain, int rows, int cols, int oX, int oY, int gX, int gY) {
+	int dx = abs(gX - oX);
+	int dy = abs(gY - oY);
+	int sx = (oX < gX) ? 1 : -1;
+	int sy = (oY < gY) ? 1 : -1;
+	int err = dx - dy;
 
-	int currentPoint = pointIndex;
-	int nextGoal = distanceMap[currentPoint].second;
+	//	#pragma unroll 128
+	while (true) {
+		if (domain[coordsToIndex(oX, oY, cols)])
+			return false;
 
-	while (nextGoal != currentPoint) {
+		if (oX == gX && oY == gY)
+			break;
 
-		distance += distanceMap[currentPoint].first;
+		int e2 = 2 * err;
 
-		currentPoint = nextGoal;
-		nextGoal = distanceMap[currentPoint].second;
+		if (e2 > -dy) {
+			err -= dy;
+			oX += sx;
+		}
+
+		if (e2 < dx) {
+			err += dx;
+			oY += sy;
+		}
 	}
 
-	return distance;
+	return true;
 }
 
 #endif // CUDACOMMON_CUH

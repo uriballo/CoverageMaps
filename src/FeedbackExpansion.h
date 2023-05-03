@@ -8,7 +8,7 @@
 
 void runExactExpansion(config configuration);
 
-CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources);
+CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources, bool storeIters);
 
 #endif
 

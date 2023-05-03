@@ -59,6 +59,13 @@ namespace CUDACoverageMaps {
 	private: System::Windows::Forms::OpenFileDialog^ openFileDialog1;
 	private: System::Windows::Forms::CheckBox^ customDistributionCB;
 	private: System::Windows::Forms::TextBox^ customDistributionTB;
+	private: System::Windows::Forms::CheckBox^ verboseCB;
+	private: System::Windows::Forms::CheckBox^ storeBoundary;
+	private: System::Windows::Forms::CheckBox^ storeIterations;
+	private: System::Windows::Forms::CheckBox^ storeFinalResult;
+
+
+
 
 
 
@@ -89,6 +96,10 @@ namespace CUDACoverageMaps {
 			this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->customDistributionCB = (gcnew System::Windows::Forms::CheckBox());
 			this->customDistributionTB = (gcnew System::Windows::Forms::TextBox());
+			this->verboseCB = (gcnew System::Windows::Forms::CheckBox());
+			this->storeBoundary = (gcnew System::Windows::Forms::CheckBox());
+			this->storeIterations = (gcnew System::Windows::Forms::CheckBox());
+			this->storeFinalResult = (gcnew System::Windows::Forms::CheckBox());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown1))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown2))->BeginInit();
 			this->tableLayoutPanel1->SuspendLayout();
@@ -99,11 +110,11 @@ namespace CUDACoverageMaps {
 			this->numericUpDown1->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
 			this->numericUpDown1->Location = System::Drawing::Point(50, 160);
-			this->numericUpDown1->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
+			this->numericUpDown1->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 20, 0, 0, 0 });
 			this->numericUpDown1->Name = L"numericUpDown1";
 			this->numericUpDown1->Size = System::Drawing::Size(207, 34);
 			this->numericUpDown1->TabIndex = 0;
-			this->numericUpDown1->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 2, 0, 0, 0 });
+			this->numericUpDown1->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
 			// 
 			// titleLabel
 			// 
@@ -141,12 +152,13 @@ namespace CUDACoverageMaps {
 			this->numericUpDown2->DecimalPlaces = 2;
 			this->numericUpDown2->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
+			this->numericUpDown2->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
 			this->numericUpDown2->Location = System::Drawing::Point(518, 160);
 			this->numericUpDown2->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
 			this->numericUpDown2->Name = L"numericUpDown2";
 			this->numericUpDown2->Size = System::Drawing::Size(207, 34);
 			this->numericUpDown2->TabIndex = 3;
-			this->numericUpDown2->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 100, 0, 0, 0 });
+			this->numericUpDown2->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 125, 0, 0, 0 });
 			// 
 			// outputImageTextBox
 			// 
@@ -237,11 +249,67 @@ namespace CUDACoverageMaps {
 			this->customDistributionTB->Size = System::Drawing::Size(394, 34);
 			this->customDistributionTB->TabIndex = 9;
 			// 
+			// verboseCB
+			// 
+			this->verboseCB->AutoSize = true;
+			this->verboseCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->verboseCB->Location = System::Drawing::Point(50, 481);
+			this->verboseCB->Name = L"verboseCB";
+			this->verboseCB->Size = System::Drawing::Size(292, 36);
+			this->verboseCB->TabIndex = 11;
+			this->verboseCB->Text = L"Verbose (store raw info)";
+			this->verboseCB->UseVisualStyleBackColor = true;
+			this->verboseCB->CheckedChanged += gcnew System::EventHandler(this, &MainForm::verboseCB_CheckedChanged);
+			// 
+			// storeBoundary
+			// 
+			this->storeBoundary->AutoSize = true;
+			this->storeBoundary->Enabled = false;
+			this->storeBoundary->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->storeBoundary->Location = System::Drawing::Point(78, 523);
+			this->storeBoundary->Name = L"storeBoundary";
+			this->storeBoundary->Size = System::Drawing::Size(142, 36);
+			this->storeBoundary->TabIndex = 12;
+			this->storeBoundary->Text = L"Boundary";
+			this->storeBoundary->UseVisualStyleBackColor = true;
+			// 
+			// storeIterations
+			// 
+			this->storeIterations->AutoSize = true;
+			this->storeIterations->Enabled = false;
+			this->storeIterations->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->storeIterations->Location = System::Drawing::Point(251, 523);
+			this->storeIterations->Name = L"storeIterations";
+			this->storeIterations->Size = System::Drawing::Size(279, 36);
+			this->storeIterations->TabIndex = 13;
+			this->storeIterations->Text = L"Coverage per iteration";
+			this->storeIterations->UseVisualStyleBackColor = true;
+			// 
+			// storeFinalResult
+			// 
+			this->storeFinalResult->AutoSize = true;
+			this->storeFinalResult->Enabled = false;
+			this->storeFinalResult->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->storeFinalResult->Location = System::Drawing::Point(569, 523);
+			this->storeFinalResult->Name = L"storeFinalResult";
+			this->storeFinalResult->Size = System::Drawing::Size(156, 36);
+			this->storeFinalResult->TabIndex = 14;
+			this->storeFinalResult->Text = L"Final result";
+			this->storeFinalResult->UseVisualStyleBackColor = true;
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(18, 45);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(778, 744);
+			this->Controls->Add(this->storeFinalResult);
+			this->Controls->Add(this->storeIterations);
+			this->Controls->Add(this->storeBoundary);
+			this->Controls->Add(this->verboseCB);
 			this->Controls->Add(this->customDistributionTB);
 			this->Controls->Add(this->customDistributionCB);
 			this->Controls->Add(this->tableLayoutPanel1);
@@ -257,7 +325,6 @@ namespace CUDACoverageMaps {
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedToolWindow;
 			this->Margin = System::Windows::Forms::Padding(6, 7, 6, 7);
 			this->Name = L"MainForm";
-			this->ShowIcon = false;
 			this->SizeGripStyle = System::Windows::Forms::SizeGripStyle::Show;
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown1))->EndInit();
@@ -327,6 +394,11 @@ namespace CUDACoverageMaps {
 				std::copy(intVector.begin(), intVector.end(), currentConfig.sources);
 			}
 
+			currentConfig.verboseMode = verboseCB->Checked;
+			currentConfig.storeBoundary = storeBoundary->Checked;
+			currentConfig.storeIterationContent = storeIterations -> Checked;
+			currentConfig.storeFinalResult = storeFinalResult->Checked;
+
 			runExactExpansion(currentConfig);
 
 			std::string fileOutputPath = "output/" + currentConfig.outputFileName + ".png";
@@ -355,6 +427,20 @@ namespace CUDACoverageMaps {
 
 	private: System::Void exitButton_Click(System::Object^ sender, System::EventArgs^ e) {
 		Application::Exit();
+	}
+
+	private: System::Void verboseCB_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
+		bool checked = verboseCB->Checked;
+		
+		storeFinalResult->Enabled = checked;
+		storeBoundary->Enabled = checked;
+		storeIterations->Enabled = checked;
+
+		if (!checked) {
+			storeFinalResult->Checked = checked;
+			storeBoundary->Checked = checked;
+			storeIterations->Checked = checked;
+		}
 	}
 };
 }

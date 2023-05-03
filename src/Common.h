@@ -9,11 +9,17 @@
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 #include <random>
+#include <filesystem>
 #include "CUDACommon.cuh"
 
 struct config {
 	std::string domainPath;
 	std::string outputFileName;
+
+	bool verboseMode;
+	bool storeBoundary;
+	bool storeIterationContent;
+	bool storeFinalResult;
 
 	float radius;
 
@@ -22,7 +28,6 @@ struct config {
 	bool randomSources;
 
 	bool showResults;
-	bool displayHeatMap;
 };
 
 #define CUDA_CHECK(x) checkCUDAError((x), __FILE__, __LINE__)
@@ -37,6 +42,8 @@ namespace IO {
 	void writeBoolMatrix(bool* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
 	void writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
+
+	void writeCUDAPairMatrix(CUDAPair<float, int>* distanceMap, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
 	cv::Mat floatToCV(const float* array, int rows, int cols);
 

@@ -11,4 +11,6 @@ __device__ bool scanWindow(const bool* boundary, float* distances, const int* so
 
 __device__ bool updateDistances(float* distances, int pointIndex, int neighIndex, bool diag);
 
+
+
 #endif // EUCLIDEAN_EXP_KERNELS_CUH

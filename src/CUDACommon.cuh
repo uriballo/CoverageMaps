@@ -149,7 +149,7 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		bool isWall = boundary[tid];
 		float pixelValue = distanceMap[tid].first;
 
-		if (isWall || pixelValue < 2.5) {
+		if (isWall ) {
 			outputR[tid] = 0.0f;
 			outputG[tid] = 0.0f;
 			outputB[tid] = 0.0f;
@@ -157,18 +157,28 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		else {
 			// Set different colors based on the pixel value.
 			if (pixelValue < (radius + FLT_MIN)) {
-			//	int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
 				float R, G, B;
+
+				if (pixelValue < 4) {
+					R = 255;
+					G = 0;
+					B = 0;
+				}
+				else {	
+					float tint = (1.0 - pixelValue / radius);
+					// float tint = 1.0f / (1.0f + exp(-10.0f * (pixelValue / radius - 0.5f)));
+
+					R = 149.0f;
+					G = 152.0f;
+					B = 144.0f;
+
+					R = R + (255.0f - R) * tint;
+					G = G + (255.0f - G) * tint;
+					B = B + (255.0f - B) * tint;
+				}
+				
+				//int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
 				//palette1(id, R, G, B);
-
-				float tint = 0.75 *( 1.0 - pixelValue / radius);
-				R = 40.0f;
-				G = 54.0f;
-				B = 24.0f;
-
-				R -= (  R) * tint;
-				G -= (  G) * tint;
-				B -= (  B) * tint;
 
 				outputR[tid] = R/255;
 				outputG[tid] = G/255;
@@ -182,6 +192,8 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		}
 	}
 }
+
+
 
 __global__ __inline__ void getBlockID(float* blockIDs, int rows, int cols) {
 	// Determine pixel to be processed by thread.
@@ -233,14 +245,39 @@ __device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelI
 			bool inBounds = xInBounds && yInBounds;
 
 			int neighIndex = coordsToIndex(newX, newY, cols);
-
-			if(inBounds)
-				if (boundary[neighIndex])
-					return true;
+		//	if(newX * newY == 0)
+				if(inBounds)
+					if (boundary[neighIndex])
+						return true;
 		}
 	}
 
 	return false;
+}
+
+__device__ __inline__ bool isCorner(const bool* boundary, const int pixelIndex, int rows, int cols) {
+	int x = 0, y = 0;
+	indexToCoords(pixelIndex, x, y, cols);
+	int hits = 0;
+
+	for (int i = -1; i < 2; i++) {
+		for (int j = -1; j < 2; j++) {
+			int newX = x + i;
+			int newY = y + j;
+
+			bool xInBounds = newX < cols && newX >= 0;
+			bool yInBounds = newY < rows && newY >= 0;
+			bool inBounds = xInBounds && yInBounds;
+
+			int neighIndex = coordsToIndex(newX, newY, cols);
+			if (i * j != 0)
+				if (inBounds)
+					if (boundary[neighIndex])
+						 hits++;
+		}
+	}
+//	if (pixelIndex)
+	return hits == 1;
 }
 
 // DISTANCES
@@ -285,7 +322,6 @@ __device__ __inline__ bool visibilityTest(const bool* domain, int rows, int cols
 	int sy = (oY < gY) ? 1 : -1;
 	int err = dx - dy;
 
-	//	#pragma unroll 128
 	while (true) {
 		if (domain[coordsToIndex(oX, oY, cols)])
 			return false;
@@ -304,6 +340,9 @@ __device__ __inline__ bool visibilityTest(const bool* domain, int rows, int cols
 			err += dx;
 			oY += sy;
 		}
+
+		if (oX >= cols || oX < 0 || oY >= rows || oY < 0)
+			return false;
 	}
 
 	return true;

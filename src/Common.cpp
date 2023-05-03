@@ -99,6 +99,24 @@ void IO::writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, 
 	outFile.close();
 }
 
+void IO::writeCUDAPairMatrix(CUDAPair<float, int>* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
+	std::ofstream outFileD;
+	std::ofstream outFileS;
+	outFileD.open(path + fileName + "_Distances" + extension);
+	outFileS.open(path + fileName + "_Predecessors" + extension);
+
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			outFileD << std::setprecision(4) << std::setw(5) << distanceMap[i * cols + j].first << " ";
+			outFileS << std::setprecision(4) << std::setw(8) << distanceMap[i * cols + j].second << " ";
+		}
+		outFileD << std::endl;
+		outFileS << std::endl;
+	}
+	outFileD.close();
+	outFileS.close();
+}
+
 cv::Mat IO::floatToCV(const float* array, int rows, int cols) {
 	// Create a new cv::Mat matrix of type CV_32F
 	cv::Mat mat(rows, cols, CV_32FC1);
@@ -114,9 +132,9 @@ cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int n
 
 	// Copy the data from the output arrays to the corresponding channels of the output matrix.
 	std::vector<cv::Mat> channels;
-	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputB));
-	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputG));
 	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputR));
+	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputG));
+	channels.push_back(cv::Mat(numRows, numCols, CV_32FC1, outputB));
 	cv::merge(channels, outputImage);
 
 	return outputImage;

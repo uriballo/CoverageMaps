@@ -7,8 +7,9 @@ void runExactExpansion(config conf) {
 
 	int numElements = rows * cols;
 	
-	// add if verbose
-	//IO::writeBoolMatrix(boundary, rows, cols, "boundary");
+	if (conf.verboseMode) {
+		IO::writeBoolMatrix(boundary, rows, cols, "boundary");
+	}
 
 	std::cout << "Domain dimensions: (" << cols << " x " << rows << ")" << std::endl;
 
@@ -16,22 +17,25 @@ void runExactExpansion(config conf) {
 		UTILS::getRandomSourceDistribution(boundary, rows, cols, conf.numSources)
 		: conf.sources;
 
-	CUDAPair<float, int>* coverageMap = computeCoverage(boundary, sourceDistribution, conf.radius, rows, cols, conf.numSources);
+//	int sourceDistribution[] = { 430, 527 };
+
+	CUDAPair<float, int>* coverageMap = computeCoverage(boundary, sourceDistribution, conf.radius, rows, cols, conf.numSources, conf.storeIterationContent);
+
+	if (conf.storeFinalResult) {
+		IO::writeCUDAPairMatrix(coverageMap, rows, cols, conf.outputFileName + "_result");
+	}
 
 	if (conf.showResults) {
-		float* processedResult = UTILS::processResults_(boundary, coverageMap, conf.radius, rows, cols);
+	//	float* processedResult = UTILS::processResults_(boundary, coverageMap, conf.radius, rows, cols);
 		
 		cv::Mat processedResultsRGB = UTILS::processResultsRGB(boundary, sourceDistribution, coverageMap, conf.radius, rows, cols, conf.numSources);
 
-		cv::Mat map = IO::floatToCV(processedResult, rows, cols);
+	//	cv::Mat map = IO::floatToCV(processedResult, rows, cols);
 		
-		IO::storeBWImage(map, conf.outputFileName);
-		IO::storeRGB(processedResultsRGB, "output/test.png");
+	//	IO::storeBWImage(map, conf.outputFileName);
+		IO::storeRGB(processedResultsRGB, "output/" + conf.outputFileName + ".png");
 
-		// add if verbose
-		//IO::writeFloatMatrix(processedResult, rows, cols, "processed-results");
-
-		delete[] processedResult;
+	//	delete[] processedResult;
 	}
 
 	delete[] coverageMap;
@@ -39,7 +43,7 @@ void runExactExpansion(config conf) {
 	delete[] sourceDistribution;
 }
 
-CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources) {
+CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources, bool storeIters) {
 	bool hostFlag = false;
 
 	bool* deviceFlag;
@@ -53,48 +57,65 @@ CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDis
 	UTILS::initializeSources(hostCoverageMap, sourceDistribution, numSources, cols);
 
 	CUDAPair<float, int>* deviceCoverageMap;
-	cudaMalloc(&deviceCoverageMap, numElements * sizeof(CUDAPair<float, int>));
-	cudaMemcpy(deviceCoverageMap, hostCoverageMap, numElements * sizeof(CUDAPair<float, int>), cudaMemcpyHostToDevice);
-	//CUDA::allocateAndCopy(deviceCoverageMap, hostCoverageMap, numElements);
+	CUDA::allocateAndCopy(deviceCoverageMap, hostCoverageMap, numElements);
 
 	bool* deviceBoundary;
-	cudaMalloc(&deviceBoundary, numElements * sizeof(bool));
-	cudaMemcpy(deviceBoundary, boundary, numElements * sizeof(bool), cudaMemcpyHostToDevice);
-	//CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
+//	cudaMalloc(&deviceBoundary, numElements * sizeof(bool));
+//	cudaMemcpy(deviceBoundary, boundary, numElements, cudaMemcpyHostToDevice);
+	CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
 
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	int iterations = 0;
-	cudaMalloc(&deviceFlag, sizeof(bool));
-	//CUDA::allocate(deviceFlag, 1);
+	int iterations = 1;
+	CUDA::allocate(deviceFlag, 1);
+	CUDAPair<float, int>* intermediateResult = new CUDAPair<float, int>[numElements];
 
 	do {
+		int innerIterations = 1;
+
 		do {
-			//CUDA::set(deviceFlag, false);
-			cudaMemset(deviceFlag, false, sizeof(bool));
+			CUDA::set(deviceFlag, false);
 			euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, deviceFlag, rows, cols, radius);
-			cudaDeviceSynchronize();
-			//CUDA::synchronize();
-			//CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
-			cudaMemcpy(&hostFlag, deviceFlag, sizeof(bool), cudaMemcpyDeviceToHost);
+			CUDA::synchronize();
+			CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
+
+			if (storeIters) {
+				CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
+				std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
+				IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
+				innerIterations++;
+			}
 		} while (hostFlag);
 
-		iterations++;
-		//CUDA::set(deviceFlag, false);
-		cudaMemset(deviceFlag, false, sizeof(bool));
+
+		CUDA::set(deviceFlag, false);
 
 		EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, deviceFlag, rows, cols, radius);
-		cudaDeviceSynchronize();
-		//CUDA::synchronize();
-		//CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
-		cudaMemcpy(&hostFlag, deviceFlag, sizeof(bool), cudaMemcpyDeviceToHost);
+		CUDA::synchronize();
+		CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
+		if (storeIters) {
+			CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
+
+			std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
+			IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
+		}
+		iterations++;
+
 	} while (hostFlag);
 	
-	std::cout << std::endl << "Iterations: " << iterations << std::endl;
+	//std::cout << std::endl << "Iterations: " << iterations << std::endl;
 
-	//CUDA::copyDeviceToHost(hostCoverageMap, deviceCoverageMap, numElements);
-	cudaMemcpy(hostCoverageMap, deviceCoverageMap, numElements * sizeof(CUDAPair<float, int>), cudaMemcpyDeviceToHost);
+	CUDA::synchronize();
+
+	CUDA::copyDeviceToHost(hostCoverageMap, deviceCoverageMap, numElements);
+
+	//CUDAPair<float, int>* ids = new CUDAPair<float, int>[numElements];
+	//testKernel << <blocksPerGrid, threadsPerBlock >> > (boundary, deviceCoverageMap, rows, cols, radius);
+//	CUDA::synchronize();
+//	CUDA::copyDeviceToHost(ids, deviceCoverageMap, numElements);
+
+//	IO::writeCUDAPairMatrix(ids, rows, cols, "000ids");
 
 	CUDA::free(deviceBoundary);
 	CUDA::free(deviceCoverageMap);

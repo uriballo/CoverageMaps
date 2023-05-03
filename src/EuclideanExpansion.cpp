@@ -18,8 +18,6 @@ void runEuclideanExpansion(config conf) {
 	IO::writeFloatMatrix(coverageMap, rows, cols, "coverage-map");
 
 	if (conf.showResults) {
-		if (conf.displayHeatMap)
-			IO::showHeatMap(coverageMap, rows, cols);
 
 		float* processedResult = UTILS::processResults(boundary, coverageMap, conf.radius, rows, cols);
 		cv::Mat map = IO::floatToCV(processedResult, rows, cols);

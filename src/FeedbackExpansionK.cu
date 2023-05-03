@@ -7,7 +7,6 @@ __global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* c
 
 	int tidX, tidY;
 	get2DThreadId(tidX, tidY);
-
 	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
 
 	__shared__ bool blockChanges;
@@ -34,7 +33,7 @@ __global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* c
 			*globalChanges = true;
 
 	} while (blockChanges);
-
+	
 }
 
 __device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
@@ -46,6 +45,10 @@ __device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* covera
 
 	// TODO: problema concu
 	CUDAPair<float, int> predPredInfo = coverageMap[pointInfo.second];
+
+//	if (pointIndex == 398420) {
+//		printf("\n\n> mirem pixel 398420\n");
+//	}
 
 	for (int dx = -1; dx < 2; dx++) {
 		for (int dy = -1; dy < 2; dy++) {
@@ -75,7 +78,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 	if (neighInfo.second == -1)
 		return expanded;
 
-	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.second, predPredInfo.second, rows, cols)) {
+//	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.second, predPredInfo.second, rows, cols)) {
 		float currentDistance = pointInfo.first;
 
 		float distanceToNeigh = indexDistance(pointIndex, neighIndex, cols);
@@ -90,6 +93,10 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 		if ((similarEnough && distToPotentialPred < distToPredecessor)
 			|| (!similarEnough && tentativeDistance < currentDistance)){
+			
+			if (pointIndex == 398420 || pointIndex == 397595) {
+		//		printf("\n\n>[%d] Current Distance: %f\nTentative: %f\nDistance to neigh %f\nPredecessor: %d\nPred Distance: %f\n", pointIndex, currentDistance,  tentativeDistance, distanceToNeigh, predecessor, neighInfo.first);
+			}
 
 			int predX, predY;
 			indexToCoords(predecessor, predX, predY, cols);
@@ -97,8 +104,12 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 			int pX, pY;
 			indexToCoords(pointIndex, pX, pY, cols);
 
-			if (!visibilityTest(boundary, rows, cols, pX, pY, predX, predY))
-				return false;
+		//	if (pointIndex == 395121 && predecessor == 434678)
+		//		if (!visibilityTest(boundary, rows, cols, pX, pY, predX, predY))
+		//			printf("VISIBLE");
+		//		else
+		//			printf("NOVISIBLE");
+			//	return false;
 
 			CUDAPair<float, int> newInfo{ tentativeDistance, predecessor };
 
@@ -106,10 +117,12 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 			expanded = true;
 		}
-	}
+//	}
 
 	return expanded;
 }
+
+
 
 __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
 	bool canUpdate = false;
@@ -133,9 +146,14 @@ __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* covera
 		int det1 = det(preX - preX2, preY - preY2, pX - preX2, pY - preY2);
 		int det2 = det(preX - preX2, preY - preY2, nX - preX2, nY - preY2);
 
+		if (pointIndex == 397595) {
+			printf("\n\n-----\nDet1: %d (sgn: %d)\nDet2: %d (sgn: %d)\n", det1, sgn(det1), det2, sgn(det2));
+		}
 		if (sgn(det1) == sgn(det2)) {
 			int det3 = det(pX - preX, pY - preY, nX - preX, nY - preY);
-
+			if (pointIndex == 397595) {
+				printf("Det3: %d (sgn: %d)\n-----\n", det3, sgn(det3));
+			}
 			if (sgn(det2) == sgn(det3)) {
 				canUpdate = true;
 			}
@@ -159,9 +177,16 @@ __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, i
 	int preX, preY;
 	indexToCoords(predecessorIndex, preX, preY, cols);
 
+	/*
 	if (!neighIsNearBoundary || !pointIsNearBoundary)
 		return predecessorIndex;
 	else if ((pX == nX && nX == preX) || (pY == nY && nY == preY))
+		return predecessorIndex;
+	else 
+		return neighIndex;
+	*/
+	
+	if (!isCorner(boundary, neighIndex, rows, cols) && !isCorner(boundary, pointIndex, rows, cols))
 		return predecessorIndex;
 	else
 		return neighIndex;

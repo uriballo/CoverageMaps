@@ -133,6 +133,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\GeneticAlgorithm.cpp" />
     <ClCompile Include="MainForm.cpp" />
     <ClCompile Include="src\ImageDisplay.cpp" />
     <CudaCompile Include="src\FeedbackExpansion.cpp" />
@@ -142,6 +143,7 @@
     <CudaCompile Include="src\FeedbackExpansionK.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\GeneticAlgorithm.h" />
     <ClInclude Include="MainForm.h">
       <FileType>CppForm</FileType>
     </ClInclude>

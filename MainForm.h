@@ -374,9 +374,11 @@ namespace CUDACoverageMaps {
 			currentConfig.numSources = static_cast<int>(numericUpDown1->Value);
 			currentConfig.radius = static_cast<float>(numericUpDown2->Value);
 
-			currentConfig.randomSources = true;//!(customDistributionCB->Checked);
+			currentConfig.randomSources = !(customDistributionCB->Checked);
+		//	std::cout << currentConfig.randomSources << " " << std::endl;
 
-			if (!currentConfig.randomSources) {
+			/*
+			if (customDistributionCB->Checked) {
 				System::String^ inputString = customDistributionTB->Text;
 
 				std::string inputStdString = marshal_as<std::string>(inputString);
@@ -391,8 +393,10 @@ namespace CUDACoverageMaps {
 				}
 
 				currentConfig.sources = new int[intVector.size()];
+				currentConfig.numSources = intVector.size() / 2;
 				std::copy(intVector.begin(), intVector.end(), currentConfig.sources);
 			}
+			*/
 
 			currentConfig.verboseMode = verboseCB->Checked;
 			currentConfig.storeBoundary = storeBoundary->Checked;

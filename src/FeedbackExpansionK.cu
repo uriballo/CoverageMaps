@@ -7,6 +7,24 @@ __global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* c
 
 	int tidX, tidY;
 	get2DThreadId(tidX, tidY);
+
+	
+	int index = coordsToIndex(tidX, tidY, cols);
+/*
+	if (boundary[index]) {
+		coverageMap[index].first = -1;
+		coverageMap[index].second = -1;
+	}
+	else if (isCorner(boundary, index, rows, cols)) {
+		coverageMap[index].first = 999;
+		coverageMap[index].second = index;
+	}	
+	else {
+		coverageMap[index].first = 0;
+		coverageMap[index].second = index;
+	}
+	return;
+	*/
 	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
 
 	__shared__ bool blockChanges;
@@ -46,10 +64,6 @@ __device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* covera
 	// TODO: problema concu
 	CUDAPair<float, int> predPredInfo = coverageMap[pointInfo.second];
 
-//	if (pointIndex == 398420) {
-//		printf("\n\n> mirem pixel 398420\n");
-//	}
-
 	for (int dx = -1; dx < 2; dx++) {
 		for (int dy = -1; dy < 2; dy++) {
 			int nx = tidX + dx;
@@ -60,8 +74,10 @@ __device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* covera
 			int neighIndex = coordsToIndex(nx, ny, cols);
 
 			if (inBounds && neighIndex != pointIndex) {
-				if (!boundary[neighIndex])
+
+				if (!boundary[neighIndex]) {
 					updates = updates || checkNeighInfo(boundary, coverageMap, pointInfo, coverageMap[neighIndex], predPredInfo, pointIndex, neighIndex, rows, cols, radius);
+				}
 			}
 		}
 	}
@@ -86,30 +102,13 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 		int predecessor = suitablePredecessor(boundary, neighInfo.second, pointIndex, neighIndex, rows, cols, radius);
 
-		bool similarEnough = abs(tentativeDistance - currentDistance) < 0.00001;
+		bool similarEnough = abs(tentativeDistance - currentDistance) < 0.41;
 
 		float distToPredecessor = indexDistance(pointIndex, pointInfo.second, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
 
 		if ((similarEnough && distToPotentialPred < distToPredecessor)
 			|| (!similarEnough && tentativeDistance < currentDistance)){
-			
-			if (pointIndex == 398420 || pointIndex == 397595) {
-		//		printf("\n\n>[%d] Current Distance: %f\nTentative: %f\nDistance to neigh %f\nPredecessor: %d\nPred Distance: %f\n", pointIndex, currentDistance,  tentativeDistance, distanceToNeigh, predecessor, neighInfo.first);
-			}
-
-			int predX, predY;
-			indexToCoords(predecessor, predX, predY, cols);
-
-			int pX, pY;
-			indexToCoords(pointIndex, pX, pY, cols);
-
-		//	if (pointIndex == 395121 && predecessor == 434678)
-		//		if (!visibilityTest(boundary, rows, cols, pX, pY, predX, predY))
-		//			printf("VISIBLE");
-		//		else
-		//			printf("NOVISIBLE");
-			//	return false;
 
 			CUDAPair<float, int> newInfo{ tentativeDistance, predecessor };
 
@@ -121,8 +120,6 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 	return expanded;
 }
-
-
 
 __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
 	bool canUpdate = false;
@@ -165,17 +162,17 @@ __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* covera
 
 // whichSubgoal -> suitablePredecessor
 __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, int pointIndex, int neighIndex, int rows, int cols, float radius) {
-	bool neighIsNearBoundary = isNearBoundary(boundary, neighIndex, rows, cols);
-	bool pointIsNearBoundary = isNearBoundary(boundary, pointIndex, rows, cols);
+//	bool neighIsNearBoundary = isNearBoundary(boundary, neighIndex, rows, cols);
+//	bool pointIsNearBoundary = isNearBoundary(boundary, pointIndex, rows, cols);
 
-	int pX, pY;
-	indexToCoords(pointIndex, pX, pY, cols);
+//	int pX, pY;
+//	indexToCoords(pointIndex, pX, pY, cols);
 
-	int nX, nY;
-	indexToCoords(neighIndex, nX, nY, cols);
+//	int nX, nY;
+//	indexToCoords(neighIndex, nX, nY, cols);
 
-	int preX, preY;
-	indexToCoords(predecessorIndex, preX, preY, cols);
+//	int preX, preY;
+//	indexToCoords(predecessorIndex, preX, preY, cols);
 
 	/*
 	if (!neighIsNearBoundary || !pointIsNearBoundary)
@@ -186,7 +183,7 @@ __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, i
 		return neighIndex;
 	*/
 	
-	if (!isCorner(boundary, neighIndex, rows, cols) && !isCorner(boundary, pointIndex, rows, cols))
+	if (!isCorner(boundary, neighIndex, rows, cols))
 		return predecessorIndex;
 	else
 		return neighIndex;

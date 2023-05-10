@@ -86,59 +86,6 @@ __global__ __inline__ void processResultsBW_(const bool* boundary, const CUDAPai
 	}
 }
 
-/*
-__device__ __inline__ void palette1(int id, float& R, float& G, float& B) {
-	switch (id) {
-	case 1:
-		R = 96.0f;
-		G = 108.0f;
-		B = 56.0f;
-		break;
-	case 2:
-		R = 40.0f;
-		G = 54.0f;
-		B = 24.0f;
-		break;
-	case 3:
-		R = 254.0f;
-		G = 250.0f;
-		B = 224.0f;
-		break;
-	case 4:
-		R = 221.0f;
-		G = 161.0f;
-		B = 94.0f;
-		break;
-	case 5:
-		R = 188.0f;
-		G = 108.0f;
-		B = 37.0f;
-		break;
-	}
-}
-
-__device__ __inline__ int pointOrigin(const CUDAPair<float, int>* distanceMap, const int* sources, int pointIndex, int cols) {
-	int currentPoint = pointIndex;
-	int nextGoal = distanceMap[currentPoint].second;
-
-	while (nextGoal != currentPoint) {
-		currentPoint = nextGoal;
-		nextGoal = distanceMap[currentPoint].second;
-	}
-
-	int j = 0, i = 0;
-	int x, y;
-	indexToCoords(currentPoint, x, y, cols);
-
-	while (x != sources[i] && y != sources[i + 1]) {
-		i += 2;
-		j++;
-	}
-
-	return j;
-}
-*/
-
 __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* sources, const CUDAPair<float, int>* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
@@ -192,8 +139,6 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 		}
 	}
 }
-
-
 
 __global__ __inline__ void getBlockID(float* blockIDs, int rows, int cols) {
 	// Determine pixel to be processed by thread.
@@ -258,7 +203,9 @@ __device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelI
 __device__ __inline__ bool isCorner(const bool* boundary, const int pixelIndex, int rows, int cols) {
 	int x = 0, y = 0;
 	indexToCoords(pixelIndex, x, y, cols);
+	
 	int hits = 0;
+	int neigh = 0;
 
 	for (int i = -1; i < 2; i++) {
 		for (int j = -1; j < 2; j++) {
@@ -270,14 +217,18 @@ __device__ __inline__ bool isCorner(const bool* boundary, const int pixelIndex, 
 			bool inBounds = xInBounds && yInBounds;
 
 			int neighIndex = coordsToIndex(newX, newY, cols);
-			if (i * j != 0)
+
+		//	if (i * j != 0)
 				if (inBounds)
-					if (boundary[neighIndex])
-						 hits++;
+					if (boundary[neighIndex]) {
+						neigh++;
+						if (i * j != 0)
+							hits++;
+					}
 		}
 	}
-//	if (pixelIndex)
-	return hits == 1;
+
+	return hits == 1 && neigh > 1;
 }
 
 // DISTANCES

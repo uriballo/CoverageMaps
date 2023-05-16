@@ -94,7 +94,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 	if (neighInfo.second == -1)
 		return expanded;
 
-//	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.second, predPredInfo.second, rows, cols)) {
+	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.second, predPredInfo.second, rows, cols)) {
 		float currentDistance = pointInfo.first;
 
 		float distanceToNeigh = indexDistance(pointIndex, neighIndex, cols);
@@ -102,13 +102,22 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 		int predecessor = suitablePredecessor(boundary, neighInfo.second, pointIndex, neighIndex, rows, cols, radius);
 
-		bool similarEnough = abs(tentativeDistance - currentDistance) < 0.41;
+		float threshold = (sqrtf(2) - 1) * 0.49;
+
+		float diff = abs(currentDistance - tentativeDistance);
+		bool similarEnough = diff < threshold;
 
 		float distToPredecessor = indexDistance(pointIndex, pointInfo.second, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
 
 		if ((similarEnough && distToPotentialPred < distToPredecessor)
 			|| (!similarEnough && tentativeDistance < currentDistance)){
+			
+			// TEST VISIBILITAT AQUI
+			
+		//	if ((similarEnough && distToPotentialPred < distToPredecessor) && pointInfo.second != -1) {
+		//	  printf("> Tentative: %f\n\t, Current %f\n\t, Tentative - Current Distance is: %f\n\tneigh: %d\n\t, pred: %d\n\t, potentialPred: %d\n\t, isPredCorner: %d\n\t, isPotPredCorner: %d\n\t, pixelIndex %d\n\n", tentativeDistance, currentDistance,  diff , neighIndex, pointInfo.second, predecessor, isCorner(boundary, pointInfo.second, rows, cols), isCorner(boundary, predecessor, rows, cols ), pointIndex);
+		//	}
 
 			CUDAPair<float, int> newInfo{ tentativeDistance, predecessor };
 
@@ -116,7 +125,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 
 			expanded = true;
 		}
-//	}
+	}
 
 	return expanded;
 }
@@ -124,7 +133,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
 	bool canUpdate = false;
 
-	if (firstPredecessor == -1 || !isNearBoundary(boundary, firstPredecessor, rows, cols)) {
+	if (firstPredecessor == -1 || !isCorner(boundary, firstPredecessor, rows, cols)) {
 		canUpdate = true;
 	}
 	else {
@@ -143,14 +152,10 @@ __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* covera
 		int det1 = det(preX - preX2, preY - preY2, pX - preX2, pY - preY2);
 		int det2 = det(preX - preX2, preY - preY2, nX - preX2, nY - preY2);
 
-		if (pointIndex == 397595) {
-			printf("\n\n-----\nDet1: %d (sgn: %d)\nDet2: %d (sgn: %d)\n", det1, sgn(det1), det2, sgn(det2));
-		}
 		if (sgn(det1) == sgn(det2)) {
+
 			int det3 = det(pX - preX, pY - preY, nX - preX, nY - preY);
-			if (pointIndex == 397595) {
-				printf("Det3: %d (sgn: %d)\n-----\n", det3, sgn(det3));
-			}
+			
 			if (sgn(det2) == sgn(det3)) {
 				canUpdate = true;
 			}

@@ -30,6 +30,22 @@ struct config {
 	bool showResults;
 };
 
+struct configuration {
+	std::string imagePath;
+	std::string imageName;
+
+	bool storeBoundary;
+	bool storeIterCoverage;
+
+	int numberOfServices;
+	float serviceRadius;
+
+	bool customDistribution;
+
+	bool euclidanExpansion;
+	bool exactExpansion;
+};
+
 #define CUDA_CHECK(x) checkCUDAError((x), __FILE__, __LINE__)
 
 namespace IO {

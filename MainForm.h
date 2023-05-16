@@ -44,25 +44,79 @@ namespace CUDACoverageMaps {
 				delete components;
 			}
 		}
-	private: System::Windows::Forms::NumericUpDown^ numericUpDown1;
+
 	protected:
 	private: System::Windows::Forms::Label^ titleLabel;
-	private: System::Windows::Forms::Label^ numSourcesLabel;
-	private: System::Windows::Forms::Label^ radiusLabel;
-	private: System::Windows::Forms::NumericUpDown^ numericUpDown2;
-	private: System::Windows::Forms::TextBox^ outputImageTextBox;
 
-	private: System::Windows::Forms::Label^ outputName;
+
+
+
+
+
 	private: System::Windows::Forms::TableLayoutPanel^ tableLayoutPanel1;
 	private: System::Windows::Forms::Button^ exitButton;
 	private: System::Windows::Forms::Button^ runButton;
 	private: System::Windows::Forms::OpenFileDialog^ openFileDialog1;
+	private: System::Windows::Forms::NumericUpDown^ numberOfServicesNum;
+	private: System::Windows::Forms::Label^ numServicesLabel;
+
+
+	private: System::Windows::Forms::NumericUpDown^ serviceRadiusNum;
+	private: System::Windows::Forms::Label^ serviceCoverageRadiusLabel;
+
+
+
+
+
 	private: System::Windows::Forms::CheckBox^ customDistributionCB;
 	private: System::Windows::Forms::TextBox^ customDistributionTB;
-	private: System::Windows::Forms::CheckBox^ verboseCB;
+
 	private: System::Windows::Forms::CheckBox^ storeBoundary;
 	private: System::Windows::Forms::CheckBox^ storeIterations;
-	private: System::Windows::Forms::CheckBox^ storeFinalResult;
+	private: System::Windows::Forms::Button^ openImageBT;
+
+
+
+	private: System::Windows::Forms::Label^ inputLabel;
+
+	private: System::Windows::Forms::TableLayoutPanel^ tableLayoutPanel2;
+	private: System::Windows::Forms::CheckBox^ maximumCoverageCB;
+
+
+	private: System::Windows::Forms::CheckBox^ exactExpansionCB;
+
+	private: System::Windows::Forms::CheckBox^ euclideanExpansionCB;
+
+	private: System::Windows::Forms::Label^ serviceConfigLabel;
+
+	private: System::Windows::Forms::Label^ label3;
+	private: System::Windows::Forms::Label^ algorithmConfigLabel;
+	private: System::Windows::Forms::Label^ metaheuristicsLabel;
+	private: System::Windows::Forms::Label^ solutionDataLabel;
+	private: System::Windows::Forms::RichTextBox^ solutionDataRTB;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -83,38 +137,51 @@ namespace CUDACoverageMaps {
 		/// </summary>
 		void InitializeComponent(void)
 		{
-			this->numericUpDown1 = (gcnew System::Windows::Forms::NumericUpDown());
+			System::Windows::Forms::TextBox^ imagePathTB;
 			this->titleLabel = (gcnew System::Windows::Forms::Label());
-			this->numSourcesLabel = (gcnew System::Windows::Forms::Label());
-			this->radiusLabel = (gcnew System::Windows::Forms::Label());
-			this->numericUpDown2 = (gcnew System::Windows::Forms::NumericUpDown());
-			this->outputImageTextBox = (gcnew System::Windows::Forms::TextBox());
-			this->outputName = (gcnew System::Windows::Forms::Label());
 			this->tableLayoutPanel1 = (gcnew System::Windows::Forms::TableLayoutPanel());
 			this->exitButton = (gcnew System::Windows::Forms::Button());
 			this->runButton = (gcnew System::Windows::Forms::Button());
 			this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->numberOfServicesNum = (gcnew System::Windows::Forms::NumericUpDown());
+			this->numServicesLabel = (gcnew System::Windows::Forms::Label());
+			this->serviceRadiusNum = (gcnew System::Windows::Forms::NumericUpDown());
+			this->serviceCoverageRadiusLabel = (gcnew System::Windows::Forms::Label());
 			this->customDistributionCB = (gcnew System::Windows::Forms::CheckBox());
 			this->customDistributionTB = (gcnew System::Windows::Forms::TextBox());
-			this->verboseCB = (gcnew System::Windows::Forms::CheckBox());
 			this->storeBoundary = (gcnew System::Windows::Forms::CheckBox());
 			this->storeIterations = (gcnew System::Windows::Forms::CheckBox());
-			this->storeFinalResult = (gcnew System::Windows::Forms::CheckBox());
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown1))->BeginInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown2))->BeginInit();
+			this->openImageBT = (gcnew System::Windows::Forms::Button());
+			this->inputLabel = (gcnew System::Windows::Forms::Label());
+			this->tableLayoutPanel2 = (gcnew System::Windows::Forms::TableLayoutPanel());
+			this->maximumCoverageCB = (gcnew System::Windows::Forms::CheckBox());
+			this->exactExpansionCB = (gcnew System::Windows::Forms::CheckBox());
+			this->euclideanExpansionCB = (gcnew System::Windows::Forms::CheckBox());
+			this->serviceConfigLabel = (gcnew System::Windows::Forms::Label());
+			this->label3 = (gcnew System::Windows::Forms::Label());
+			this->algorithmConfigLabel = (gcnew System::Windows::Forms::Label());
+			this->metaheuristicsLabel = (gcnew System::Windows::Forms::Label());
+			this->solutionDataLabel = (gcnew System::Windows::Forms::Label());
+			this->solutionDataRTB = (gcnew System::Windows::Forms::RichTextBox());
+			imagePathTB = (gcnew System::Windows::Forms::TextBox());
 			this->tableLayoutPanel1->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numberOfServicesNum))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->serviceRadiusNum))->BeginInit();
+			this->tableLayoutPanel2->SuspendLayout();
 			this->SuspendLayout();
 			// 
-			// numericUpDown1
+			// imagePathTB
 			// 
-			this->numericUpDown1->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			imagePathTB->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
+			imagePathTB->Enabled = false;
+			imagePathTB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->numericUpDown1->Location = System::Drawing::Point(50, 160);
-			this->numericUpDown1->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 20, 0, 0, 0 });
-			this->numericUpDown1->Name = L"numericUpDown1";
-			this->numericUpDown1->Size = System::Drawing::Size(207, 34);
-			this->numericUpDown1->TabIndex = 0;
-			this->numericUpDown1->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
+			imagePathTB->Location = System::Drawing::Point(3, 3);
+			imagePathTB->MaxLength = 60;
+			imagePathTB->Name = L"imagePathTB";
+			imagePathTB->Size = System::Drawing::Size(394, 34);
+			imagePathTB->TabIndex = 21;
+			imagePathTB->Text = L"N/A";
 			// 
 			// titleLabel
 			// 
@@ -125,67 +192,10 @@ namespace CUDACoverageMaps {
 			this->titleLabel->TabIndex = 1;
 			this->titleLabel->Text = L"CUDA Coverage Maps";
 			// 
-			// numSourcesLabel
-			// 
-			this->numSourcesLabel->AutoSize = true;
-			this->numSourcesLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->numSourcesLabel->Location = System::Drawing::Point(44, 115);
-			this->numSourcesLabel->Name = L"numSourcesLabel";
-			this->numSourcesLabel->Size = System::Drawing::Size(218, 32);
-			this->numSourcesLabel->TabIndex = 2;
-			this->numSourcesLabel->Text = L"Number of sources";
-			// 
-			// radiusLabel
-			// 
-			this->radiusLabel->AutoSize = true;
-			this->radiusLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->radiusLabel->Location = System::Drawing::Point(512, 115);
-			this->radiusLabel->Name = L"radiusLabel";
-			this->radiusLabel->Size = System::Drawing::Size(84, 32);
-			this->radiusLabel->TabIndex = 4;
-			this->radiusLabel->Text = L"Radius";
-			// 
-			// numericUpDown2
-			// 
-			this->numericUpDown2->DecimalPlaces = 2;
-			this->numericUpDown2->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->numericUpDown2->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
-			this->numericUpDown2->Location = System::Drawing::Point(518, 160);
-			this->numericUpDown2->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
-			this->numericUpDown2->Name = L"numericUpDown2";
-			this->numericUpDown2->Size = System::Drawing::Size(207, 34);
-			this->numericUpDown2->TabIndex = 3;
-			this->numericUpDown2->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 125, 0, 0, 0 });
-			// 
-			// outputImageTextBox
-			// 
-			this->outputImageTextBox->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
-			this->outputImageTextBox->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->outputImageTextBox->Location = System::Drawing::Point(331, 304);
-			this->outputImageTextBox->MaxLength = 12;
-			this->outputImageTextBox->Name = L"outputImageTextBox";
-			this->outputImageTextBox->Size = System::Drawing::Size(394, 34);
-			this->outputImageTextBox->TabIndex = 5;
-			this->outputImageTextBox->Text = L"output1";
-			// 
-			// outputName
-			// 
-			this->outputName->AutoSize = true;
-			this->outputName->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->outputName->Location = System::Drawing::Point(44, 303);
-			this->outputName->Name = L"outputName";
-			this->outputName->Size = System::Drawing::Size(230, 32);
-			this->outputName->TabIndex = 6;
-			this->outputName->Text = L"Output image name";
-			this->outputName->Click += gcnew System::EventHandler(this, &MainForm::label1_Click);
-			// 
 			// tableLayoutPanel1
 			// 
+			this->tableLayoutPanel1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->tableLayoutPanel1->ColumnCount = 2;
 			this->tableLayoutPanel1->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
 				50)));
@@ -193,18 +203,20 @@ namespace CUDACoverageMaps {
 				50)));
 			this->tableLayoutPanel1->Controls->Add(this->exitButton, 0, 0);
 			this->tableLayoutPanel1->Controls->Add(this->runButton, 1, 0);
-			this->tableLayoutPanel1->Location = System::Drawing::Point(13, 663);
+			this->tableLayoutPanel1->Location = System::Drawing::Point(12, 755);
 			this->tableLayoutPanel1->Name = L"tableLayoutPanel1";
 			this->tableLayoutPanel1->RowCount = 1;
 			this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 50)));
-			this->tableLayoutPanel1->Size = System::Drawing::Size(753, 69);
+			this->tableLayoutPanel1->Size = System::Drawing::Size(620, 42);
 			this->tableLayoutPanel1->TabIndex = 7;
 			// 
 			// exitButton
 			// 
+			this->exitButton->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->exitButton->Location = System::Drawing::Point(3, 3);
 			this->exitButton->Name = L"exitButton";
-			this->exitButton->Size = System::Drawing::Size(370, 63);
+			this->exitButton->Size = System::Drawing::Size(304, 36);
 			this->exitButton->TabIndex = 0;
 			this->exitButton->Text = L"EXIT";
 			this->exitButton->UseVisualStyleBackColor = true;
@@ -212,9 +224,11 @@ namespace CUDACoverageMaps {
 			// 
 			// runButton
 			// 
-			this->runButton->Location = System::Drawing::Point(379, 3);
+			this->runButton->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
+			this->runButton->Location = System::Drawing::Point(313, 3);
 			this->runButton->Name = L"runButton";
-			this->runButton->Size = System::Drawing::Size(371, 63);
+			this->runButton->Size = System::Drawing::Size(304, 36);
 			this->runButton->TabIndex = 1;
 			this->runButton->Text = L"RUN";
 			this->runButton->UseVisualStyleBackColor = true;
@@ -224,14 +238,57 @@ namespace CUDACoverageMaps {
 			// 
 			this->openFileDialog1->FileName = L"openFileDialog1";
 			// 
+			// numberOfServicesNum
+			// 
+			this->numberOfServicesNum->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->numberOfServicesNum->Location = System::Drawing::Point(64, 292);
+			this->numberOfServicesNum->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 20, 0, 0, 0 });
+			this->numberOfServicesNum->Name = L"numberOfServicesNum";
+			this->numberOfServicesNum->Size = System::Drawing::Size(101, 34);
+			this->numberOfServicesNum->TabIndex = 0;
+			this->numberOfServicesNum->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1, 0, 0, 0 });
+			// 
+			// numServicesLabel
+			// 
+			this->numServicesLabel->AutoSize = true;
+			this->numServicesLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->numServicesLabel->Location = System::Drawing::Point(175, 291);
+			this->numServicesLabel->Name = L"numServicesLabel";
+			this->numServicesLabel->Size = System::Drawing::Size(204, 30);
+			this->numServicesLabel->TabIndex = 2;
+			this->numServicesLabel->Text = L"Number of Services";
+			// 
+			// serviceRadiusNum
+			// 
+			this->serviceRadiusNum->DecimalPlaces = 2;
+			this->serviceRadiusNum->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->serviceRadiusNum->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
+			this->serviceRadiusNum->Location = System::Drawing::Point(64, 332);
+			this->serviceRadiusNum->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
+			this->serviceRadiusNum->Name = L"serviceRadiusNum";
+			this->serviceRadiusNum->Size = System::Drawing::Size(101, 34);
+			this->serviceRadiusNum->TabIndex = 3;
+			this->serviceRadiusNum->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 125, 0, 0, 0 });
+			// 
+			// serviceCoverageRadiusLabel
+			// 
+			this->serviceCoverageRadiusLabel->AutoSize = true;
+			this->serviceCoverageRadiusLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->serviceCoverageRadiusLabel->Location = System::Drawing::Point(175, 334);
+			this->serviceCoverageRadiusLabel->Name = L"serviceCoverageRadiusLabel";
+			this->serviceCoverageRadiusLabel->Size = System::Drawing::Size(176, 30);
+			this->serviceCoverageRadiusLabel->TabIndex = 4;
+			this->serviceCoverageRadiusLabel->Text = L"Coverage Radius";
+			// 
 			// customDistributionCB
 			// 
 			this->customDistributionCB->AutoSize = true;
-			this->customDistributionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->customDistributionCB->Location = System::Drawing::Point(50, 398);
+			this->customDistributionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->customDistributionCB->Location = System::Drawing::Point(67, 372);
 			this->customDistributionCB->Name = L"customDistributionCB";
-			this->customDistributionCB->Size = System::Drawing::Size(251, 36);
+			this->customDistributionCB->Size = System::Drawing::Size(228, 34);
 			this->customDistributionCB->TabIndex = 8;
 			this->customDistributionCB->Text = L"Custom distribution";
 			this->customDistributionCB->UseVisualStyleBackColor = true;
@@ -243,83 +300,196 @@ namespace CUDACoverageMaps {
 			this->customDistributionTB->Enabled = false;
 			this->customDistributionTB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->customDistributionTB->Location = System::Drawing::Point(331, 400);
+			this->customDistributionTB->Location = System::Drawing::Point(301, 372);
 			this->customDistributionTB->MaxLength = 60;
 			this->customDistributionTB->Name = L"customDistributionTB";
-			this->customDistributionTB->Size = System::Drawing::Size(394, 34);
+			this->customDistributionTB->Size = System::Drawing::Size(281, 34);
 			this->customDistributionTB->TabIndex = 9;
-			// 
-			// verboseCB
-			// 
-			this->verboseCB->AutoSize = true;
-			this->verboseCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->verboseCB->Location = System::Drawing::Point(50, 481);
-			this->verboseCB->Name = L"verboseCB";
-			this->verboseCB->Size = System::Drawing::Size(292, 36);
-			this->verboseCB->TabIndex = 11;
-			this->verboseCB->Text = L"Verbose (store raw info)";
-			this->verboseCB->UseVisualStyleBackColor = true;
-			this->verboseCB->CheckedChanged += gcnew System::EventHandler(this, &MainForm::verboseCB_CheckedChanged);
 			// 
 			// storeBoundary
 			// 
 			this->storeBoundary->AutoSize = true;
-			this->storeBoundary->Enabled = false;
-			this->storeBoundary->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->storeBoundary->Location = System::Drawing::Point(78, 523);
+			this->storeBoundary->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->storeBoundary->Location = System::Drawing::Point(67, 196);
 			this->storeBoundary->Name = L"storeBoundary";
-			this->storeBoundary->Size = System::Drawing::Size(142, 36);
+			this->storeBoundary->Size = System::Drawing::Size(330, 34);
 			this->storeBoundary->TabIndex = 12;
-			this->storeBoundary->Text = L"Boundary";
+			this->storeBoundary->Text = L"Store boundary as binary map";
 			this->storeBoundary->UseVisualStyleBackColor = true;
 			// 
 			// storeIterations
 			// 
 			this->storeIterations->AutoSize = true;
-			this->storeIterations->Enabled = false;
-			this->storeIterations->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->storeIterations->Location = System::Drawing::Point(251, 523);
+			this->storeIterations->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->storeIterations->Location = System::Drawing::Point(67, 222);
 			this->storeIterations->Name = L"storeIterations";
-			this->storeIterations->Size = System::Drawing::Size(279, 36);
+			this->storeIterations->Size = System::Drawing::Size(311, 34);
 			this->storeIterations->TabIndex = 13;
-			this->storeIterations->Text = L"Coverage per iteration";
+			this->storeIterations->Text = L"Store coverage per iteration";
 			this->storeIterations->UseVisualStyleBackColor = true;
 			// 
-			// storeFinalResult
+			// openImageBT
 			// 
-			this->storeFinalResult->AutoSize = true;
-			this->storeFinalResult->Enabled = false;
-			this->storeFinalResult->Font = (gcnew System::Drawing::Font(L"Segoe UI", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->openImageBT->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10));
+			this->openImageBT->Location = System::Drawing::Point(405, 3);
+			this->openImageBT->Name = L"openImageBT";
+			this->openImageBT->Size = System::Drawing::Size(113, 26);
+			this->openImageBT->TabIndex = 20;
+			this->openImageBT->Text = L"Open File";
+			this->openImageBT->UseVisualStyleBackColor = true;
+			// 
+			// inputLabel
+			// 
+			this->inputLabel->AutoSize = true;
+			this->inputLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->storeFinalResult->Location = System::Drawing::Point(569, 523);
-			this->storeFinalResult->Name = L"storeFinalResult";
-			this->storeFinalResult->Size = System::Drawing::Size(156, 36);
-			this->storeFinalResult->TabIndex = 14;
-			this->storeFinalResult->Text = L"Final result";
-			this->storeFinalResult->UseVisualStyleBackColor = true;
+			this->inputLabel->Location = System::Drawing::Point(45, 90);
+			this->inputLabel->Name = L"inputLabel";
+			this->inputLabel->Size = System::Drawing::Size(66, 30);
+			this->inputLabel->TabIndex = 18;
+			this->inputLabel->Text = L"Input";
+			// 
+			// tableLayoutPanel2
+			// 
+			this->tableLayoutPanel2->ColumnCount = 2;
+			this->tableLayoutPanel2->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
+				50)));
+			this->tableLayoutPanel2->ColumnStyles->Add((gcnew System::Windows::Forms::ColumnStyle(System::Windows::Forms::SizeType::Percent,
+				50)));
+			this->tableLayoutPanel2->Controls->Add(this->openImageBT, 1, 0);
+			this->tableLayoutPanel2->Controls->Add(imagePathTB, 0, 0);
+			this->tableLayoutPanel2->Location = System::Drawing::Point(64, 123);
+			this->tableLayoutPanel2->Name = L"tableLayoutPanel2";
+			this->tableLayoutPanel2->RowCount = 1;
+			this->tableLayoutPanel2->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 50)));
+			this->tableLayoutPanel2->Size = System::Drawing::Size(804, 34);
+			this->tableLayoutPanel2->TabIndex = 22;
+			// 
+			// maximumCoverageCB
+			// 
+			this->maximumCoverageCB->AutoSize = true;
+			this->maximumCoverageCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->maximumCoverageCB->Location = System::Drawing::Point(67, 534);
+			this->maximumCoverageCB->Name = L"maximumCoverageCB";
+			this->maximumCoverageCB->Size = System::Drawing::Size(277, 34);
+			this->maximumCoverageCB->TabIndex = 24;
+			this->maximumCoverageCB->Text = L"Find maximum coverage";
+			this->maximumCoverageCB->UseVisualStyleBackColor = true;
+			// 
+			// exactExpansionCB
+			// 
+			this->exactExpansionCB->AutoSize = true;
+			this->exactExpansionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->exactExpansionCB->Location = System::Drawing::Point(67, 464);
+			this->exactExpansionCB->Name = L"exactExpansionCB";
+			this->exactExpansionCB->Size = System::Drawing::Size(190, 34);
+			this->exactExpansionCB->TabIndex = 26;
+			this->exactExpansionCB->Text = L"Exact Expansion";
+			this->exactExpansionCB->UseVisualStyleBackColor = true;
+			// 
+			// euclideanExpansionCB
+			// 
+			this->euclideanExpansionCB->AutoSize = true;
+			this->euclideanExpansionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
+			this->euclideanExpansionCB->Location = System::Drawing::Point(67, 437);
+			this->euclideanExpansionCB->Name = L"euclideanExpansionCB";
+			this->euclideanExpansionCB->Size = System::Drawing::Size(232, 34);
+			this->euclideanExpansionCB->TabIndex = 25;
+			this->euclideanExpansionCB->Text = L"Euclidean Expansion";
+			this->euclideanExpansionCB->UseVisualStyleBackColor = true;
+			// 
+			// serviceConfigLabel
+			// 
+			this->serviceConfigLabel->AutoSize = true;
+			this->serviceConfigLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->serviceConfigLabel->Location = System::Drawing::Point(45, 259);
+			this->serviceConfigLabel->Name = L"serviceConfigLabel";
+			this->serviceConfigLabel->Size = System::Drawing::Size(230, 30);
+			this->serviceConfigLabel->TabIndex = 27;
+			this->serviceConfigLabel->Text = L"Service Configuration";
+			// 
+			// label3
+			// 
+			this->label3->AutoSize = true;
+			this->label3->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->label3->Location = System::Drawing::Point(45, 163);
+			this->label3->Name = L"label3";
+			this->label3->Size = System::Drawing::Size(91, 30);
+			this->label3->TabIndex = 28;
+			this->label3->Text = L"Output ";
+			// 
+			// algorithmConfigLabel
+			// 
+			this->algorithmConfigLabel->AutoSize = true;
+			this->algorithmConfigLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->algorithmConfigLabel->Location = System::Drawing::Point(45, 409);
+			this->algorithmConfigLabel->Name = L"algorithmConfigLabel";
+			this->algorithmConfigLabel->Size = System::Drawing::Size(259, 30);
+			this->algorithmConfigLabel->TabIndex = 29;
+			this->algorithmConfigLabel->Text = L"Algorithm Configuration";
+			// 
+			// metaheuristicsLabel
+			// 
+			this->metaheuristicsLabel->AutoSize = true;
+			this->metaheuristicsLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->metaheuristicsLabel->Location = System::Drawing::Point(45, 501);
+			this->metaheuristicsLabel->Name = L"metaheuristicsLabel";
+			this->metaheuristicsLabel->Size = System::Drawing::Size(164, 30);
+			this->metaheuristicsLabel->TabIndex = 30;
+			this->metaheuristicsLabel->Text = L"Metaheuristics ";
+			// 
+			// solutionDataLabel
+			// 
+			this->solutionDataLabel->AutoSize = true;
+			this->solutionDataLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI Semibold", 11, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->solutionDataLabel->Location = System::Drawing::Point(45, 571);
+			this->solutionDataLabel->Name = L"solutionDataLabel";
+			this->solutionDataLabel->Size = System::Drawing::Size(149, 30);
+			this->solutionDataLabel->TabIndex = 31;
+			this->solutionDataLabel->Text = L"Solution Data";
+			// 
+			// solutionDataRTB
+			// 
+			this->solutionDataRTB->Enabled = false;
+			this->solutionDataRTB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->solutionDataRTB->Location = System::Drawing::Point(67, 604);
+			this->solutionDataRTB->Name = L"solutionDataRTB";
+			this->solutionDataRTB->Size = System::Drawing::Size(515, 145);
+			this->solutionDataRTB->TabIndex = 32;
+			this->solutionDataRTB->Text = L"";
 			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(18, 45);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(778, 744);
-			this->Controls->Add(this->storeFinalResult);
+			this->ClientSize = System::Drawing::Size(644, 807);
+			this->Controls->Add(this->solutionDataRTB);
+			this->Controls->Add(this->solutionDataLabel);
+			this->Controls->Add(this->metaheuristicsLabel);
+			this->Controls->Add(this->algorithmConfigLabel);
+			this->Controls->Add(this->label3);
+			this->Controls->Add(this->serviceConfigLabel);
+			this->Controls->Add(this->exactExpansionCB);
+			this->Controls->Add(this->euclideanExpansionCB);
+			this->Controls->Add(this->maximumCoverageCB);
+			this->Controls->Add(this->tableLayoutPanel2);
+			this->Controls->Add(this->inputLabel);
 			this->Controls->Add(this->storeIterations);
 			this->Controls->Add(this->storeBoundary);
-			this->Controls->Add(this->verboseCB);
 			this->Controls->Add(this->customDistributionTB);
 			this->Controls->Add(this->customDistributionCB);
 			this->Controls->Add(this->tableLayoutPanel1);
-			this->Controls->Add(this->outputName);
-			this->Controls->Add(this->outputImageTextBox);
-			this->Controls->Add(this->radiusLabel);
-			this->Controls->Add(this->numericUpDown2);
-			this->Controls->Add(this->numSourcesLabel);
+			this->Controls->Add(this->serviceCoverageRadiusLabel);
+			this->Controls->Add(this->serviceRadiusNum);
+			this->Controls->Add(this->numServicesLabel);
 			this->Controls->Add(this->titleLabel);
-			this->Controls->Add(this->numericUpDown1);
+			this->Controls->Add(this->numberOfServicesNum);
 			this->Font = (gcnew System::Drawing::Font(L"Segoe UI", 16, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
 			this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedToolWindow;
@@ -327,9 +497,11 @@ namespace CUDACoverageMaps {
 			this->Name = L"MainForm";
 			this->SizeGripStyle = System::Windows::Forms::SizeGripStyle::Show;
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown1))->EndInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown2))->EndInit();
 			this->tableLayoutPanel1->ResumeLayout(false);
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numberOfServicesNum))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->serviceRadiusNum))->EndInit();
+			this->tableLayoutPanel2->ResumeLayout(false);
+			this->tableLayoutPanel2->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -369,7 +541,7 @@ namespace CUDACoverageMaps {
 			String^ filePath = openFileDialog1->FileName;
 
 			currentConfig.domainPath = marshal_as<std::string>(filePath);
-			currentConfig.outputFileName = marshal_as<std::string>(outputImageTextBox->Text);
+			currentConfig.outputFileName = "output";//marshal_as<std::string>(outputImageTextBox->Text);
 
 			currentConfig.numSources = static_cast<int>(numericUpDown1->Value);
 			currentConfig.radius = static_cast<float>(numericUpDown2->Value);
@@ -398,10 +570,10 @@ namespace CUDACoverageMaps {
 			}
 			*/
 
-			currentConfig.verboseMode = verboseCB->Checked;
+			currentConfig.verboseMode = false;
 			currentConfig.storeBoundary = storeBoundary->Checked;
 			currentConfig.storeIterationContent = storeIterations -> Checked;
-			currentConfig.storeFinalResult = storeFinalResult->Checked;
+			currentConfig.storeFinalResult = false;//storeFinalResult->Checked;
 
 			runExactExpansion(currentConfig);
 
@@ -412,10 +584,10 @@ namespace CUDACoverageMaps {
 			ImageDisplay^ form = gcnew ImageDisplay(image);
 			form->Show();
 
-			System::String^ currentText = outputImageTextBox->Text;
-			System::String^ newText = IncrementImageNumber(currentText, iterations);
+		//	System::String^ currentText = outputImageTextBox->Text;
+		//	System::String^ newText = IncrementImageNumber(currentText, iterations);
 
-			outputImageTextBox->Text = newText;
+			//outputImageTextBox->Text = newText;
 		}
 	}
 	
@@ -433,18 +605,5 @@ namespace CUDACoverageMaps {
 		Application::Exit();
 	}
 
-	private: System::Void verboseCB_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
-		bool checked = verboseCB->Checked;
-		
-		storeFinalResult->Enabled = checked;
-		storeBoundary->Enabled = checked;
-		storeIterations->Enabled = checked;
-
-		if (!checked) {
-			storeFinalResult->Checked = checked;
-			storeBoundary->Checked = checked;
-			storeIterations->Checked = checked;
-		}
-	}
 };
 }

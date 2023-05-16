@@ -11,35 +11,37 @@ void runExactExpansion(config conf) {
 		IO::writeBoolMatrix(boundary, rows, cols, "boundary");
 	}
 
-	
-	int* sourceDistribution = conf.randomSources ?
-		UTILS::getRandomSourceDistribution(boundary, rows, cols, conf.numSources)
-		: conf.sources;
 
-	std::cout << "int sourceDistribution[] = { ";
+//	int* sourceDistribution = conf.randomSources ?
+//		UTILS::getRandomSourceDistribution(boundary, rows, cols, conf.numSources)
+//		: conf.sources;
 
-	for (int i = 0; i < conf.numSources * 2; i++) {
-		if (i == 2 * conf.numSources -1)
-			std::cout << sourceDistribution[i] << " ";
-		else
-			std::cout << sourceDistribution[i] << ", ";
-	}
-
-	std::cout << "}; " << std::endl;
-	
 
 //	int sourceDistribution[] = { 83, 566, 710, 344, 169, 551, 233, 53, 621, 40 };
 //	int sourceDistribution[] = { 206, 36, 63, 37, 703, 194, 130, 641, 392, 63 };
 //	int sourceDistribution[] = { 594, 323, 399, 409, 557, 22, 752, 484, 741, 397 };
 //	int sourceDistribution[] = { 118, 215, 630, 323, 422, 550, 874, 323, 729, 711 };
-
-
+//	int sourceDistribution[] = { 911, 501, 461, 563, 400, 627, 28, 724, 477, 550, 343, 732, 1050, 312, 112, 545, 411, 350, 456, 547 };
+//	int sourceDistribution[] = { 555, 172, 147, 635, 921, 476, 702, 199, 631, 204, 631, 84, 527, 72, 1072, 243, 604, 264, 104, 440 };
+//	int sourceDistribution[] = { 641, 210 };
+//	int sourceDistribution[] = { 87, 669, 889, 227, 1050, 518, 359, 355, 564, 266, 927, 545 };
 //	int sourceDistribution[] = { 314, 18, 887, 538, 290, 626, 181, 453, 411, 320 };
+	int sourceDistribution[] = { 697, 573 };
+
+	std::cout << "int sourceDistribution[] = { ";
+
+	for (int i = 0; i < conf.numSources * 2; i++) {
+		if (i == 2 * conf.numSources - 1)
+			std::cout << sourceDistribution[i] << " ";
+		else
+			std::cout << sourceDistribution[i] << ", ";
+	}
+	std::cout << "}; " << std::endl;
 
 	CUDAPair<float, int>* coverageMap = computeCoverage(boundary, sourceDistribution, conf.radius, rows, cols, conf.numSources, conf.storeIterationContent);
 
 	if (conf.storeFinalResult) {
-		IO::writeCUDAPairMatrix(coverageMap, rows, cols, conf.outputFileName + "_Bresult");
+		IO::writeCUDAPairMatrix(coverageMap, rows, cols, conf.outputFileName + "_result");
 	}
 
 	if (conf.showResults) {
@@ -57,7 +59,7 @@ void runExactExpansion(config conf) {
 
 	delete[] coverageMap;
 	delete[] boundary;
-	delete[] sourceDistribution;
+//	delete[] sourceDistribution;
 }
 
 CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources, bool storeIters) {
@@ -99,7 +101,7 @@ CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDis
 
 			if (storeIters) {
 				CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
-				std::string fileName = "Biteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
+				std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
 				IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
 				innerIterations++;
 			}
@@ -114,7 +116,7 @@ CUDAPair<float, int>* computeCoverage(const bool* boundary, const int* sourceDis
 		if (storeIters) {
 			CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
 
-			std::string fileName = "Biteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
+			std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
 			IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
 		}
 		iterations++;

@@ -3,7 +3,8 @@
 //#ifndef CUDACOMMON_CUH
 //#define CUDACOMMON_CUH
 
-#include <cuda_runtime.h>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <cmath>
 #include <cfloat>
@@ -61,6 +62,79 @@ __global__ __inline__ void extractBoundary(const float* image, bool* boundary, i
 			boundary[tid] = false;
 		else
 			boundary[tid] = true;
+	}
+}
+
+__device__ __inline__ bool isCorner(const float* rawImage, const int pixelIndex, int rows, int cols) {
+	int x = 0, y = 0;
+	indexToCoords(pixelIndex, x, y, cols);
+
+	int hits = 0;
+	int neigh = 0;
+
+	for (int i = -1; i < 2; i++) {
+		for (int j = -1; j < 2; j++) {
+			int newX = x + i;
+			int newY = y + j;
+
+			bool xInBounds = newX < cols && newX >= 0;
+			bool yInBounds = newY < rows && newY >= 0;
+			bool inBounds = xInBounds && yInBounds;
+
+			int neighIndex = coordsToIndex(newX, newY, cols);
+
+			if (inBounds)
+				if (rawImage[neighIndex] <= 127.5f) {
+					neigh++;
+					if (i * j != 0)
+						hits++;
+				}
+		}
+	}
+
+	return hits == 1 && neigh > 1;
+}
+
+__global__ __inline__ void preProcessDomain(const float* rawImage, int* domain, int rows, int cols) {
+	int tid = getThreadId();
+
+	int numElements = rows * cols;
+
+	if (tid < numElements) {
+		float pixelIntensity = rawImage[tid];
+
+		if (pixelIntensity <= 127.5f) // Wall
+			domain[tid] = -1;
+		else if (isCorner(rawImage, tid, rows, cols))
+			domain[tid] = 1; // Interior point corner
+		else
+			domain[tid] = 0; // Interior point free
+	}
+}
+
+__global__ __inline__ void initCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols) {
+	int tid = getThreadId();
+
+	if (tid < numElements) {
+		MapElement currentCell;
+		
+		currentCell.distance = initRadius;
+		currentCell.predecessor = initPredecessor;
+		currentCell.source = initPredecessor;
+
+		coverageMap[tid] = currentCell;
+	}
+
+	//__syncthreads();
+
+	if (tid == 0) {
+		for (int i = 0; i < 2 * numServices; i+=2 ) {
+			int serviceIndex = coordsToIndex(servicesDistribution[i], servicesDistribution[i + 1], cols);
+
+			coverageMap[serviceIndex].distance = 0;
+			coverageMap[serviceIndex].predecessor = serviceIndex;
+			coverageMap[serviceIndex].source = serviceIndex;
+		}
 	}
 }
 

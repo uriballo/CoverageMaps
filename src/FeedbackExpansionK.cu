@@ -150,9 +150,7 @@ __device__ bool canUpdateInfo(const bool* boundary, MapElement* coverageMap, int
 	return canUpdate;
 }
 
-// whichSubgoal -> suitablePredecessor
 __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, int pointIndex, int neighIndex, int rows, int cols, float radius) {
-	
 	if (!isCorner(boundary, neighIndex, rows, cols))
 		return predecessorIndex;
 	else

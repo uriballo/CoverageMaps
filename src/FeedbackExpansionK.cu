@@ -1,7 +1,7 @@
 #include "FeedbackExpansionK.cuh"
 #include <iostream>
 
-__global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
+__global__ void euclideanExpansion(const bool* boundary, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
 	// Get the ID of the thread
 	//int tid = getThreadId();
 
@@ -10,21 +10,6 @@ __global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* c
 
 	
 	int index = coordsToIndex(tidX, tidY, cols);
-/*
-	if (boundary[index]) {
-		coverageMap[index].first = -1;
-		coverageMap[index].second = -1;
-	}
-	else if (isCorner(boundary, index, rows, cols)) {
-		coverageMap[index].first = 999;
-		coverageMap[index].second = index;
-	}	
-	else {
-		coverageMap[index].first = 0;
-		coverageMap[index].second = index;
-	}
-	return;
-	*/
 	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
 
 	__shared__ bool blockChanges;
@@ -54,15 +39,15 @@ __global__ void euclideanExpansion(const bool* boundary, CUDAPair<float, int>* c
 	
 }
 
-__device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
+__device__ bool listenUpdates(const bool* boundary, MapElement* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
 	bool updates = false;
 
 	int pointIndex = coordsToIndex(tidX, tidY, cols);
 
-	CUDAPair<float, int> pointInfo = coverageMap[pointIndex];
+	MapElement pointInfo = coverageMap[pointIndex];
 
 	// TODO: problema concu
-	CUDAPair<float, int> predPredInfo = coverageMap[pointInfo.second];
+	MapElement predPredInfo = coverageMap[pointInfo.predecessor];
 
 	for (int dx = -1; dx < 2; dx++) {
 		for (int dy = -1; dy < 2; dy++) {
@@ -88,26 +73,26 @@ __device__ bool listenUpdates(const bool* boundary, CUDAPair<float, int>* covera
 	return updates;
 }
 
-__device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* coverageMap, CUDAPair<float, int>& pointInfo, CUDAPair<float, int> neighInfo, CUDAPair<float, int> predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
+__device__ bool checkNeighInfo(const bool* boundary, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
 	bool expanded = false;
 
-	if (neighInfo.second == -1)
+	if (neighInfo.predecessor == -1)
 		return expanded;
 
-	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.second, predPredInfo.second, rows, cols)) {
-		float currentDistance = pointInfo.first;
+	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
+		float currentDistance = pointInfo.distance;
 
 		float distanceToNeigh = indexDistance(pointIndex, neighIndex, cols);
-		float tentativeDistance = neighInfo.first + distanceToNeigh;
+		float tentativeDistance = neighInfo.distance + distanceToNeigh;
 
-		int predecessor = suitablePredecessor(boundary, neighInfo.second, pointIndex, neighIndex, rows, cols, radius);
+		int predecessor = suitablePredecessor(boundary, neighInfo.predecessor, pointIndex, neighIndex, rows, cols, radius);
 
 		float threshold = (sqrtf(2) - 1) * 0.49;
 
 		float diff = abs(currentDistance - tentativeDistance);
 		bool similarEnough = diff < threshold;
 
-		float distToPredecessor = indexDistance(pointIndex, pointInfo.second, cols);
+		float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
 
 		if ((similarEnough && distToPotentialPred < distToPredecessor)
@@ -119,7 +104,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 		//	  printf("> Tentative: %f\n\t, Current %f\n\t, Tentative - Current Distance is: %f\n\tneigh: %d\n\t, pred: %d\n\t, potentialPred: %d\n\t, isPredCorner: %d\n\t, isPotPredCorner: %d\n\t, pixelIndex %d\n\n", tentativeDistance, currentDistance,  diff , neighIndex, pointInfo.second, predecessor, isCorner(boundary, pointInfo.second, rows, cols), isCorner(boundary, predecessor, rows, cols ), pointIndex);
 		//	}
 
-			CUDAPair<float, int> newInfo{ tentativeDistance, predecessor };
+			MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
 
 			pointInfo = newInfo;
 
@@ -130,7 +115,7 @@ __device__ bool checkNeighInfo(const bool* boundary, CUDAPair<float, int>* cover
 	return expanded;
 }
 
-__device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
+__device__ bool canUpdateInfo(const bool* boundary, MapElement* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
 	bool canUpdate = false;
 
 	if (firstPredecessor == -1 || !isCorner(boundary, firstPredecessor, rows, cols)) {
@@ -167,26 +152,6 @@ __device__ bool canUpdateInfo(const bool* boundary, CUDAPair<float, int>* covera
 
 // whichSubgoal -> suitablePredecessor
 __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, int pointIndex, int neighIndex, int rows, int cols, float radius) {
-//	bool neighIsNearBoundary = isNearBoundary(boundary, neighIndex, rows, cols);
-//	bool pointIsNearBoundary = isNearBoundary(boundary, pointIndex, rows, cols);
-
-//	int pX, pY;
-//	indexToCoords(pointIndex, pX, pY, cols);
-
-//	int nX, nY;
-//	indexToCoords(neighIndex, nX, nY, cols);
-
-//	int preX, preY;
-//	indexToCoords(predecessorIndex, preX, preY, cols);
-
-	/*
-	if (!neighIsNearBoundary || !pointIsNearBoundary)
-		return predecessorIndex;
-	else if ((pX == nX && nX == preX) || (pY == nY && nY == preY))
-		return predecessorIndex;
-	else 
-		return neighIndex;
-	*/
 	
 	if (!isCorner(boundary, neighIndex, rows, cols))
 		return predecessorIndex;
@@ -194,7 +159,7 @@ __device__ int suitablePredecessor(const bool* boundary, int predecessorIndex, i
 		return neighIndex;
 }
 
-__global__ void EEDT(const bool* boundary, CUDAPair<float, int>* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
+__global__ void EEDT(const bool* boundary, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
 	// Get the ID of the thread
 
 	int tidX, tidY;
@@ -204,49 +169,14 @@ __global__ void EEDT(const bool* boundary, CUDAPair<float, int>* coverageMap, bo
 	if (tidX >= cols || tidY >= rows)
 		return;
 
-	CUDAPair<float, int> pointInfo = coverageMap[tid];
+	MapElement pointInfo = coverageMap[tid];
 
-	if (!boundary[tid] && pointInfo.first > 0 && pointInfo.first < (radius + FLT_MIN) ) {
+	if (!boundary[tid] && pointInfo.distance > 0 && pointInfo.distance < (radius + FLT_MIN) ) {
 		float exactDistance = computeDistance(coverageMap, tid, cols);
 
-		if (exactDistance != -1 && exactDistance < pointInfo.first) {
-			coverageMap[tid].first = exactDistance;
+		if (exactDistance != -1 && exactDistance < pointInfo.distance) {
+			coverageMap[tid].distance = exactDistance;
 			*globalChanges = true;
 		}
 	}
-}
-
-__global__ void EEDT_(const bool* boundary, CUDAPair<float, int>* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
-	// Get the ID of the thread
-	int tid = getThreadId();
-
-	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
-
-	__shared__ bool blockChanges;
-
-	int dims = rows * cols;
-
-	do {
-		if (responsible)
-			// Set the value of blockIsActive to false at the start of each iteration
-			blockChanges = false;
-
-		__syncthreads();
-
-		if (tid < dims && !boundary[tid]) {
-			CUDAPair<float, int> pointInfo = coverageMap[tid];
-
-			float predecessorDistance = indexDistance(tid, pointInfo.second, cols);
-
-			if (predecessorDistance < pointInfo.first) {
-				coverageMap[tid].first = predecessorDistance;
-				blockChanges = true;
-			}
-		}
-
-		__syncthreads();
-
-		if (blockChanges && responsible)
-			*globalChanges = true;
-	} while (blockChanges);
 }

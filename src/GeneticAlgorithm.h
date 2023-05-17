@@ -1,15 +1,13 @@
 #pragma once
 
-#ifndef GENETIC_ALGORITHM_H
-#define GENETIC_ALGORITHM_H
+//#ifndef GENETIC_ALGORITHM_H
+//#define GENETIC_ALGORITHM_H
 
-#include "Common.h"
+//#include "Common.h"
 
-int interiorPoints;
+//int interiorPoints;
+//void setup();
 
+//float* evaluateIndividual(const std::vector<int>& genes);
 
-void setup();
-
-float* evaluateIndividual(const std::vector<int>& genes);
-
-#endif
+//#endif

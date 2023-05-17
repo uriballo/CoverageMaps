@@ -1,15 +1,13 @@
 #pragma once
 
-#ifndef CUDACOMMON_CUH
-#define CUDACOMMON_CUH
+//#ifndef CUDACOMMON_CUH
+//#define CUDACOMMON_CUH
 
 #include <cuda_runtime.h>
-
 #include <device_launch_parameters.h>
 #include <cmath>
 #include <cfloat>
-
-#include "CUDAPair.cuh"
+#include "MapElement.cuh"
 
 constexpr float SCALE = 1.0;
 
@@ -66,7 +64,7 @@ __global__ __inline__ void extractBoundary(const float* image, bool* boundary, i
 	}
 }
 
-__global__ __inline__ void processResultsBW_(const bool* boundary, const CUDAPair<float, int>* distanceMap, float* output, const float radius, int numElements) {
+__global__ __inline__ void processResultsBW_(const bool* boundary, const MapElement* distanceMap, float* output, const float radius, int numElements) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
 
@@ -74,7 +72,7 @@ __global__ __inline__ void processResultsBW_(const bool* boundary, const CUDAPai
 	if (tid < numElements) {
 
 		bool isWall = boundary[tid];
-		float pixelValue = distanceMap[tid].first;
+		float pixelValue = distanceMap[tid].distance;
 
 		if (isWall) {
 			output[tid] = 0.0f;
@@ -86,7 +84,7 @@ __global__ __inline__ void processResultsBW_(const bool* boundary, const CUDAPai
 	}
 }
 
-__global__ __inline__ void processResultsRGB_(const bool* boundary, const int* sources, const CUDAPair<float, int>* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
+__global__ __inline__ void processResultsRGB_(const bool* boundary,  const MapElement* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
 
@@ -94,7 +92,7 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary, const int* s
 	if (tid < numElements) {
 
 		bool isWall = boundary[tid];
-		float pixelValue = distanceMap[tid].first;
+		float pixelValue = distanceMap[tid].distance;
 
 		if (isWall ) {
 			outputR[tid] = 0.0f;
@@ -251,16 +249,16 @@ __device__ __inline__ float indexDistance(int pointA, int pointB, int cols) {
 	return sqrtf((xA - xB) * (xA - xB) + (yA - yB) * (yA - yB));
 }
 
-__device__ __inline__ float computeDistance(CUDAPair<float, int>* distanceMap, int pointIndex, int cols) {
+__device__ __inline__ float computeDistance(MapElement* distanceMap, int pointIndex, int cols) {
 	float distance = 0.0f;
 
 	int currentPoint = pointIndex;
-	int nextGoal = distanceMap[currentPoint].second;
+	int nextGoal = distanceMap[currentPoint].predecessor;
 
 	while (nextGoal != currentPoint) {
 		distance += indexDistance(currentPoint, nextGoal, cols);
 		currentPoint = nextGoal;
-		nextGoal = distanceMap[currentPoint].second;
+		nextGoal = distanceMap[currentPoint].predecessor;
 	}
 
 	return distance;
@@ -299,4 +297,4 @@ __device__ __inline__ bool visibilityTest(const bool* domain, int rows, int cols
 	return true;
 }
 
-#endif // CUDACOMMON_CUH
+//#endif // CUDACOMMON_CUH

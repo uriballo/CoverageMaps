@@ -156,7 +156,7 @@
       <FileType>CppForm</FileType>
     </ClInclude>
     <CudaCompile Include="src\CUDACommon.cuh" />
-    <CudaCompile Include="src\CUDAPair.cuh" />
+    <CudaCompile Include="src\MapElement.cuh" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="MainForm.resx">

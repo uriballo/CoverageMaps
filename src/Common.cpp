@@ -99,7 +99,7 @@ void IO::writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, 
 	outFile.close();
 }
 
-void IO::writeCUDAPairMatrix(CUDAPair<float, int>* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
+void IO::writeCUDAPairMatrix(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
 	std::ofstream outFileD;
 	std::ofstream outFileS;
 	outFileD.open(path + fileName + "_Distances" + extension);
@@ -107,8 +107,8 @@ void IO::writeCUDAPairMatrix(CUDAPair<float, int>* distanceMap, int rows, int co
 
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			outFileD << std::setprecision(4) << std::setw(5) << distanceMap[i * cols + j].first << " ";
-			outFileS << std::setprecision(4) << std::setw(8) << distanceMap[i * cols + j].second << " ";
+			outFileD << std::setprecision(4) << std::setw(5) << distanceMap[i * cols + j].distance << " ";
+			outFileS << std::setprecision(4) << std::setw(8) << distanceMap[i * cols + j].predecessor << " ";
 		}
 		outFileD << std::endl;
 		outFileS << std::endl;
@@ -164,26 +164,26 @@ void IO::storeRGB(const cv::Mat& imageRGB, std::string filePath){
 	cv::imwrite(filePath, image8Bit, compression_params);
 }
 
-void IO::showHeatMap(const float* heatMap, int rows, int cols) {
-	cv::Mat aux = floatToCV(heatMap, rows, cols);
+std::vector<int> UTILS::convertStringToIntVector(const std::string& str){
+	std::vector<int> result;
+	std::istringstream iss(str);
+	std::string token;
 
-	cv::Mat normalized;
-	cv::normalize(aux, normalized, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	while (std::getline(iss, token, ',')) {
+		result.push_back(std::stoi(token));
+	}
 
-	cv::Mat heatmapN;
-	cv::applyColorMap(normalized, heatmapN, cv::COLORMAP_HOT);
-
-	cv::imshow("Heat Map", heatmapN);
-	cv::waitKey(0);
+	return result;
 }
 
-int* UTILS::getRandomSourceDistribution(bool* boundary, int rows, int cols, int N) {
-	int* sources = new int[2 * N];
+std::vector<int> UTILS::getRandomSourceDistribution(const bool* boundary, int rows, int cols, int N) {
+	std::vector<int> sources;
+	sources.reserve(2 * N); // Reserve space for efficiency
 
-	std::random_device rd; // obtain a random seed from the hardware
-	std::mt19937 gen(rd()); // seed the generator
-	std::uniform_int_distribution<> colDistribution(0, cols - 1); // define the range for the column index
-	std::uniform_int_distribution<> rowDistribution(0, rows - 1); // define the range for the row index
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> colDistribution(0, cols - 1);
+	std::uniform_int_distribution<> rowDistribution(0, rows - 1);
 
 	int i = 0;
 
@@ -193,8 +193,8 @@ int* UTILS::getRandomSourceDistribution(bool* boundary, int rows, int cols, int 
 		int index = y * cols + x;
 
 		if (!boundary[index]) {
-			sources[i] = x;
-			sources[i + 1] = y;
+			sources.push_back(x);
+			sources.push_back(y);
 			i += 2;
 		}
 	}
@@ -231,45 +231,13 @@ float* UTILS::processResults(const bool* boundary, const float* coverageMap, con
 	return result;
 }
 
-float* UTILS::processResults_(const bool* boundary, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols) {
-	const int numElements = rows * cols;
-
-	float* deviceOutput;
-	CUDA::allocate(deviceOutput, numElements);
-
-	CUDAPair<float, int>* deviceCoverage;
-	CUDA::allocateAndCopy(deviceCoverage, coverageMap, numElements);
-
-	bool* deviceDomain;
-	CUDA::allocateAndCopy(deviceDomain, boundary, numElements);
-
-	dim3 threadsPerBlock(16, 16);
-	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-	processResultsBW_ << < blocksPerGrid, threadsPerBlock >> > (deviceDomain, deviceCoverage, deviceOutput, radius, rows * cols);
-	CUDA::synchronize();
-
-	float* result = new float[numElements];
-
-	CUDA::copyDeviceToHost(result, deviceOutput, numElements);
-
-	CUDA::free(deviceOutput);
-	CUDA::free(deviceCoverage);
-	CUDA::free(deviceDomain);
-
-	return result;
-}
-
-cv::Mat UTILS::processResultsRGB(const bool* boundary, const int* sources, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols, int numSources) {
+cv::Mat UTILS::processResultsRGB(const bool* boundary, const MapElement* coverageMap, const float radius, int rows, int cols, int numSources) {
 	int numElements = rows * cols;
 	
 	bool* deviceBoundary;
 	CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
-	
-	int* deviceSources;
-	CUDA::allocateAndCopy(deviceSources, sources, numSources);
 
-	CUDAPair<float, int>* deviceCoverageMap;
+	MapElement* deviceCoverageMap;
 	CUDA::allocateAndCopy(deviceCoverageMap, coverageMap, numElements);
 
 	float* outputR;
@@ -282,7 +250,7 @@ cv::Mat UTILS::processResultsRGB(const bool* boundary, const int* sources, const
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	processResultsRGB_ << < blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceSources, deviceCoverageMap, outputR, outputG, outputB, radius, numElements, cols);
+	processResultsRGB_ << < blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, outputR, outputG, outputB, radius, numElements, cols);
 	CUDA::synchronize();
 
 	float* R = new float[numElements];
@@ -302,17 +270,17 @@ cv::Mat UTILS::processResultsRGB(const bool* boundary, const int* sources, const
 	return colorMap;
 }
 
-void UTILS::initializeCoverageMap(CUDAPair<float, int>* coverageMap, const float initDist, const int initPredecessor, const int size) {
+void UTILS::initializeCoverageMap(MapElement* coverageMap, const float initDist, const int initPredecessor, const int size) {
 	for (int i = 0; i < size; i++)
-		coverageMap[i] = CUDAPair<float, int>{ initDist, initPredecessor };
+		coverageMap[i] = MapElement{ initDist, initPredecessor, initPredecessor };
 }
 
-void UTILS::initializeSources(CUDAPair<float, int>* coverageMap, const int* sourceDistribution, const int numSources, const int cols)
+void UTILS::initializeSources(MapElement* coverageMap, const std::vector<int>& sourceDistribution, const int numSources, const int cols)
 {
 	int j = -1;
 	for (int i = 0; i < 2 * numSources; i += 2) {
 		int index = sourceDistribution[i + 1] * cols + sourceDistribution[i];
-		coverageMap[index].first = 0.0f;
-		coverageMap[index].second = index;
+		coverageMap[index].distance = 0.0f;
+		coverageMap[index].predecessor = index;
 	}
 }

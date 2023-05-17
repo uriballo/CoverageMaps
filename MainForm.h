@@ -30,7 +30,6 @@ namespace CUDACoverageMaps {
 			//TODO: Add the constructor code here
 			//
 			customDistributionTB->Text = "x1,y1,x2,y2,x3,y3...";
-			iterations = 1;
 		}
 
 	protected:
@@ -47,9 +46,6 @@ namespace CUDACoverageMaps {
 
 	protected:
 	private: System::Windows::Forms::Label^ titleLabel;
-
-
-
 
 
 
@@ -278,9 +274,9 @@ namespace CUDACoverageMaps {
 			this->serviceCoverageRadiusLabel->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
 			this->serviceCoverageRadiusLabel->Location = System::Drawing::Point(175, 334);
 			this->serviceCoverageRadiusLabel->Name = L"serviceCoverageRadiusLabel";
-			this->serviceCoverageRadiusLabel->Size = System::Drawing::Size(176, 30);
+			this->serviceCoverageRadiusLabel->Size = System::Drawing::Size(152, 30);
 			this->serviceCoverageRadiusLabel->TabIndex = 4;
-			this->serviceCoverageRadiusLabel->Text = L"Coverage Radius";
+			this->serviceCoverageRadiusLabel->Text = L"Service Radius";
 			// 
 			// customDistributionCB
 			// 
@@ -353,6 +349,8 @@ namespace CUDACoverageMaps {
 			// exactExpansionCB
 			// 
 			this->exactExpansionCB->AutoSize = true;
+			this->exactExpansionCB->Checked = true;
+			this->exactExpansionCB->CheckState = System::Windows::Forms::CheckState::Checked;
 			this->exactExpansionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
 			this->exactExpansionCB->Location = System::Drawing::Point(67, 464);
 			this->exactExpansionCB->Name = L"exactExpansionCB";
@@ -360,6 +358,7 @@ namespace CUDACoverageMaps {
 			this->exactExpansionCB->TabIndex = 26;
 			this->exactExpansionCB->Text = L"Exact Expansion";
 			this->exactExpansionCB->UseVisualStyleBackColor = true;
+			this->exactExpansionCB->CheckedChanged += gcnew System::EventHandler(this, &MainForm::exactExpansionCB_CheckedChanged);
 			// 
 			// euclideanExpansionCB
 			// 
@@ -371,6 +370,7 @@ namespace CUDACoverageMaps {
 			this->euclideanExpansionCB->TabIndex = 25;
 			this->euclideanExpansionCB->Text = L"Euclidean Expansion";
 			this->euclideanExpansionCB->UseVisualStyleBackColor = true;
+			this->euclideanExpansionCB->CheckedChanged += gcnew System::EventHandler(this, &MainForm::euclideanExpansionCB_CheckedChanged);
 			// 
 			// serviceConfigLabel
 			// 
@@ -491,98 +491,59 @@ namespace CUDACoverageMaps {
 
 		}
 #pragma endregion
-		private: int iterations;
-		
-		private: System::Void openImageBT_Click(System::Object^ sender, System::EventArgs^ e) {
-			OpenFileDialog^ openFileDialog1 = gcnew OpenFileDialog();
-
-			openFileDialog1->Title = "Select an Image";
-
-			if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-				String^ filePath = openFileDialog1->FileName;
-
-				inputPathTB->Text = filePath;
-			}
-		}
-
-	   private: System::String^ IncrementImageNumber(System::String^ input, int newNumber)
-	   {
-		   // Convert the input string to a std::string
-		   std::string inputStr = msclr::interop::marshal_as<std::string>(input);
-
-		   // Find the last sequence of digits in the string
-		   size_t pos = inputStr.find_last_of("0123456789");
-
-		   // If a sequence of digits was found, replace it with the new number
-		   if (pos != std::string::npos)
-		   {
-			   inputStr.replace(pos, std::string::npos, std::to_string(newNumber));
-		   }
-
-		   // Convert the result back to a System::String^ and return it
-		   return msclr::interop::marshal_as<System::String^>(inputStr);
-	   }
-
-	private: System::Void runButton_Click(System::Object^ sender, System::EventArgs^ e) {
+	
+	private: System::Void openImageBT_Click(System::Object^ sender, System::EventArgs^ e) {
 		OpenFileDialog^ openFileDialog1 = gcnew OpenFileDialog();
 
 		openFileDialog1->Title = "Select an Image";
 
 		if (openFileDialog1->ShowDialog() == System::Windows::Forms::DialogResult::OK) {
-			config currentConfig;
-			iterations++;
-
 			String^ filePath = openFileDialog1->FileName;
 
-			currentConfig.domainPath = marshal_as<std::string>(filePath);
-			currentConfig.outputFileName = "output";//marshal_as<std::string>(outputImageTextBox->Text);
-
-			currentConfig.numSources = static_cast<int>(numberOfServicesNum->Value);
-			currentConfig.radius = static_cast<float>(serviceRadiusNum->Value);
-
-			currentConfig.randomSources = !(customDistributionCB->Checked);
-		//	std::cout << currentConfig.randomSources << " " << std::endl;
-
-			/*
-			if (customDistributionCB->Checked) {
-				System::String^ inputString = customDistributionTB->Text;
-
-				std::string inputStdString = marshal_as<std::string>(inputString);
-				std::stringstream ss(inputStdString);
-				std::vector<int> intVector;
-
-				while (ss.good()) {
-					std::string substr;
-					getline(ss, substr, ',');
-					int value = std::stoi(substr);
-					intVector.push_back(value);
-				}
-
-				currentConfig.sources = new int[intVector.size()];
-				currentConfig.numSources = intVector.size() / 2;
-				std::copy(intVector.begin(), intVector.end(), currentConfig.sources);
-			}
-			*/
-
-			currentConfig.verboseMode = false;
-			currentConfig.storeBoundary = storeBoundary->Checked;
-			currentConfig.storeIterationContent = storeIterations -> Checked;
-			currentConfig.storeFinalResult = false;//storeFinalResult->Checked;
-
-			runExactExpansion(currentConfig);
-
-			std::string fileOutputPath = "output/" + currentConfig.outputFileName + ".png";
-			System::String^ filePathStr = msclr::interop::marshal_as<System::String^>(fileOutputPath);
-
-			Bitmap^ image = gcnew Bitmap(filePathStr);
-			ImageDisplay^ form = gcnew ImageDisplay(image);
-			form->Show();
-
-		//	System::String^ currentText = outputImageTextBox->Text;
-		//	System::String^ newText = IncrementImageNumber(currentText, iterations);
-
-			//outputImageTextBox->Text = newText;
+			inputPathTB->Text = filePath;
 		}
+	}
+
+	private: System::Void runButton_Click(System::Object^ sender, System::EventArgs^ e) {
+		configuration config;
+
+		config.imagePath = marshal_as<std::string>(inputPathTB->Text);
+
+		std::size_t lastSlash = config.imagePath.find_last_of("\\/");
+		std::string imageName = config.imagePath.substr(lastSlash + 1);
+		auto currentTime = std::chrono::system_clock::now();
+		std::string timestampStr = std::to_string(std::chrono::system_clock::to_time_t(currentTime));
+
+		config.imageName = timestampStr + "_" + imageName;
+
+		config.storeBoundary = storeBoundary->Checked;
+		config.storeIterCoverage = storeIterations->Checked;
+
+		config.numberOfServices = static_cast<int>(numberOfServicesNum->Value);
+		config.serviceRadius = static_cast<float>(serviceRadiusNum->Value);
+
+		config.customDistribution = customDistributionCB->Checked;
+		config.serviceDistribution = marshal_as<std::string>(customDistributionTB->Text);
+
+		config.euclideanExpansion = euclideanExpansionCB->Checked;
+		config.exactExpansion = exactExpansionCB->Checked;
+
+		config.maxCoverage = maximumCoverageCB->Checked;
+
+		if (config.exactExpansion)
+			runExactExpansion(config);
+		else
+			runEuclideanExpansion(config);
+
+		solutionDataRTB->Text = marshal_as<String^>(config.solutionData);
+
+		std::string fileOutputPath = "output/" + config.imageName;
+
+		System::String^ filePathStr = msclr::interop::marshal_as<System::String^>(fileOutputPath);
+
+		Bitmap^ image = gcnew Bitmap(filePathStr);
+		ImageDisplay^ form = gcnew ImageDisplay(image);
+		form->Show();
 	}
 	
 	private: System::Void customDistributionCB_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
@@ -599,6 +560,16 @@ namespace CUDACoverageMaps {
 		Application::Exit();
 	}
 
+	private: System::Void euclideanExpansionCB_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
+		if (euclideanExpansionCB->Checked) {
+			exactExpansionCB->Checked = false;
+		}
+	}
 
+	private: System::Void exactExpansionCB_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
+		if (exactExpansionCB->Checked) {
+			euclideanExpansionCB->Checked = false;
+		}
+	}
 };
 }

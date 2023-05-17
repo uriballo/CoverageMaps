@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef COMMON_H
-#define COMMON_H
+//#ifndef COMMON_H
+//#define COMMON_H
 
 #include <string>
 #include <fstream>
@@ -10,25 +10,8 @@
 #include <cuda_runtime.h>
 #include <random>
 #include <filesystem>
+#include "MapElement.cuh"
 #include "CUDACommon.cuh"
-
-struct config {
-	std::string domainPath;
-	std::string outputFileName;
-
-	bool verboseMode;
-	bool storeBoundary;
-	bool storeIterationContent;
-	bool storeFinalResult;
-
-	float radius;
-
-	int numSources;
-	int* sources;
-	bool randomSources;
-
-	bool showResults;
-};
 
 struct configuration {
 	std::string imagePath;
@@ -41,9 +24,14 @@ struct configuration {
 	float serviceRadius;
 
 	bool customDistribution;
+	std::string serviceDistribution;
 
-	bool euclidanExpansion;
+	bool euclideanExpansion;
 	bool exactExpansion;
+
+	bool maxCoverage;
+
+	std::string solutionData;
 };
 
 #define CUDA_CHECK(x) checkCUDAError((x), __FILE__, __LINE__)
@@ -59,7 +47,7 @@ namespace IO {
 
 	void writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
-	void writeCUDAPairMatrix(CUDAPair<float, int>* distanceMap, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
+	void writeCUDAPairMatrix(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
 	cv::Mat floatToCV(const float* array, int rows, int cols);
 
@@ -68,8 +56,6 @@ namespace IO {
 	void storeBWImage(const cv::Mat& mat, std::string windowTitle);
 
 	void storeRGB(const cv::Mat& imageRGB, std::string filePath);
-
-	void showHeatMap(const float* heatMap, int rows, int cols);
 }
 
 namespace CUDA {
@@ -134,19 +120,19 @@ namespace CUDA {
 }
 
 namespace UTILS {
-	int* getRandomSourceDistribution(bool* boundary, int rows, int cols, int N);
+	std::vector<int> convertStringToIntVector(const std::string& str);
+
+	std::vector<int> getRandomSourceDistribution(const bool* boundary, int rows, int cols, int N);
 
 	float* processResults(const bool* boundary, const float* coverageMap, const float radius, int rows, int cols);
 
-	float* processResults_(const bool* boundary, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols);
+	cv::Mat processResultsRGB(const bool* boundary,  const MapElement* coverageMap, const float radius, int rows, int cols, int numSources);
 
-	cv::Mat processResultsRGB(const bool* boundary, const int* sources, const CUDAPair<float, int>* coverageMap, const float radius, int rows, int cols, int numSources);
+	void initializeCoverageMap(MapElement* coverageMap, const float initDist, const int initPredecessor, const int size);
 
-	void initializeCoverageMap(CUDAPair<float, int>* coverageMap, const float initDist, const int initPredecessor, const int size);
-
-	void initializeSources(CUDAPair<float, int>* coverageMap, const int* sourceDistribution, const int numSources, const int cols);
+	void initializeSources(MapElement* coverageMap, const std::vector<int>& sourceDistribution, const int numSources, const int cols);
 }
 
-#endif
+//#endif
 
 

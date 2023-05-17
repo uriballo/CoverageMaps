@@ -1,7 +1,7 @@
 #include "EuclideanExpansionK.cuh"
 #include <iostream>
 
-__global__ void euclideanExpansionKernel(const bool* boundary, float* distances, const int* sources, bool* globalChanges, int rows, int cols) {
+__global__ void euclideanExpansionKernel(const bool* boundary, float* distances, bool* globalChanges, int rows, int cols) {
 	// Get the ID of the thread
 	int tid = getThreadId();
 
@@ -18,7 +18,7 @@ __global__ void euclideanExpansionKernel(const bool* boundary, float* distances,
 
 		__syncthreads();
 		if (tid < dims && !boundary[tid]) {
-			if (scanWindow(boundary, distances, sources, tid, rows, cols))
+			if (scanWindow(boundary, distances, tid, rows, cols))
 				blockChanges = true;
 		}
 
@@ -30,7 +30,7 @@ __global__ void euclideanExpansionKernel(const bool* boundary, float* distances,
 	} while (blockChanges);
 }
 
-__device__ bool scanWindow(const bool* boundary, float* distances, const int* sources, const int pixelIndex, int rows, int cols) {
+__device__ bool scanWindow(const bool* boundary, float* distances, const int pixelIndex, int rows, int cols) {
 	// Convert the index of the current pixel to its x and y coordinates
 	int ix = 0, iy = 0;
 	indexToCoords(pixelIndex, ix, iy, cols);

@@ -52,7 +52,7 @@
     <CudaCompile Include="src\Common.cpp">
       <Filter>Source Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\CUDAPair.cuh">
+    <CudaCompile Include="src\MapElement.cuh">
       <Filter>Header Files</Filter>
     </CudaCompile>
     <CudaCompile Include="src\CUDACommon.cuh">

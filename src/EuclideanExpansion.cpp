@@ -1,37 +1,39 @@
 #include "EuclideanExpansion.h"
 
-void runEuclideanExpansion(config conf) {
+void runEuclideanExpansion(configuration config) {
 	int rows, cols;
 
-	bool* boundary = IO::extractImageBoundary(conf.domainPath, rows, cols);
+	bool* boundary = IO::extractImageBoundary(config.imagePath, rows, cols);
 
 	IO::writeBoolMatrix(boundary, rows, cols, "boundary");
 
 	std::cout << "Domain dimensions: (" << cols << " x " << rows << ")" << std::endl;
 
-	int* sourceDistribution = conf.randomSources ?
-		UTILS::getRandomSourceDistribution(boundary, rows, cols, conf.numSources)
-		: conf.sources;
+	std::vector<int> servicesDistribution;
 
-	float* coverageMap = computeCoverageMap(boundary, sourceDistribution, conf.radius, rows, cols, conf.numSources);
+	if (config.customDistribution) {
+		servicesDistribution = UTILS::convertStringToIntVector(config.serviceDistribution);
+	}
+	else {
+		servicesDistribution = UTILS::getRandomSourceDistribution(boundary, rows, cols, config.numberOfServices);
+	}
+
+	float* coverageMap = computeCoverageMap(boundary, servicesDistribution, config.serviceRadius, rows, cols, config.numberOfServices);
 
 	IO::writeFloatMatrix(coverageMap, rows, cols, "coverage-map");
 
-	if (conf.showResults) {
 
-		float* processedResult = UTILS::processResults(boundary, coverageMap, conf.radius, rows, cols);
-		cv::Mat map = IO::floatToCV(processedResult, rows, cols);
-		IO::storeBWImage(map, "Coverage Map");
+	float* processedResult = UTILS::processResults(boundary, coverageMap, config.serviceRadius, rows, cols);
+	cv::Mat map = IO::floatToCV(processedResult, rows, cols);
+	IO::storeBWImage(map, "Coverage Map");
 
-		delete[] processedResult;
-	}
+	delete[] processedResult;
 
 	delete[] coverageMap;
 	delete[] boundary;
-	delete[] sourceDistribution;
 }
 
-float* computeCoverageMap(const bool* boundary, const int* sourceDistribution, float radius, int rows, int cols, int numSources) {
+float* computeCoverageMap(const bool* boundary, const std::vector<int>& sourceDistribution, float radius, int rows, int cols, int numSources) {
 	bool hostFlag = false;
 	bool* deviceFlag;
 
@@ -63,7 +65,7 @@ float* computeCoverageMap(const bool* boundary, const int* sourceDistribution, f
 	int iterations = 0;
 	do {
 		CUDA::set(deviceFlag, false);
-		euclideanExpansionKernel << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceMap, sourceDistribution, deviceFlag, rows, cols);
+		euclideanExpansionKernel << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceMap, deviceFlag, rows, cols);
 		CUDA::synchronize();
 		CUDA::copyVarDeviceToHost(&hostFlag, deviceFlag);
 	} while (hostFlag);

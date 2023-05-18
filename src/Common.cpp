@@ -10,7 +10,7 @@ bool* IO::extractImageBoundary(const std::string filePath, int& rows, int& cols)
 	const int numElements = rows * cols;
 
 	// Convert the matrix to a flat array of floats.
-	float* hostDomain = cvBW2FloatArray(image);
+	float* hostDomain = convertCV2Float(image);
 
 	// Allocate memory on the GPU for the raw and normalized domains.
 	bool* deviceBoundary;
@@ -27,7 +27,7 @@ bool* IO::extractImageBoundary(const std::string filePath, int& rows, int& cols)
 	extractBoundary << <blocksPerGrid, threadsPerBlock >> > (deviceDomain, deviceBoundary, numElements);
 
 	// Wait for the GPU kernel to finish.
-	CUDA::synchronize();
+	CUDA::sync();
 
 	bool* result = new bool[numElements];
 	//	GPU::copyDeviceToHost(result, normalizedDomain, pixels);
@@ -51,7 +51,7 @@ int* IO::preProcessDomainImage(const std::string filePath, int& rows, int& cols)
 	int numElements = rows * cols;
 
 	// Convert the matrix to a flat array of floats.
-	float* hostImage = cvBW2FloatArray(image);
+	float* hostImage = convertCV2Float(image);
 
 	int* deviceDomain;
 	CUDA::allocate(deviceDomain, numElements);
@@ -64,7 +64,7 @@ int* IO::preProcessDomainImage(const std::string filePath, int& rows, int& cols)
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
 	preProcessDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
-	CUDA::synchronize();
+	CUDA::sync();
 
 	int* hostDomain = new int[numElements];
 	CUDA::copyDeviceToHost(hostDomain, deviceDomain, numElements);
@@ -89,7 +89,7 @@ cv::Mat IO::readImage(const std::string path, cv::ImreadModes mode) {
 	return img;
 }
 
-float* IO::cvBW2FloatArray(const cv::Mat& image) {
+float* IO::convertCV2Float(const cv::Mat& image) {
 	// Check if the matrix is grayscale and of type uchar
 	if (image.channels() != 1 || image.type() != CV_8U) {
 		std::cerr << "Error: matrix is not grayscale or not of type uchar" << std::endl;
@@ -148,7 +148,7 @@ void IO::writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, 
 	outFile.close();
 }
 
-void IO::writeCUDAPairMatrix(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
+void IO::writeCoverageMap(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
 	std::ofstream outFileD;
 	std::ofstream outFileS;
 	outFileD.open(path + fileName + "_Distances" + extension);
@@ -166,7 +166,7 @@ void IO::writeCUDAPairMatrix(const MapElement* distanceMap, int rows, int cols, 
 	outFileS.close();
 }
 
-cv::Mat IO::floatToCV(const float* array, int rows, int cols) {
+cv::Mat IO::convertFloat2CV(const float* array, int rows, int cols) {
 	// Create a new cv::Mat matrix of type CV_32F
 	cv::Mat mat(rows, cols, CV_32FC1);
 
@@ -189,18 +189,7 @@ cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int n
 	return outputImage;
 }
 
-void IO::storeBWImage(const cv::Mat& mat, std::string fileName) {
-	cv::Mat floatMat8UC1;
-	mat.convertTo(floatMat8UC1, CV_8UC1, 255.0);
-	std::vector<int> compression_params;
-	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
-	compression_params.push_back(9); // PNG compression level, 0-9 (9 being highest compression)
-
-	std::string filePath = "output/" + fileName + ".png";
-	cv::imwrite(filePath, floatMat8UC1, compression_params);
-}
-
-void IO::storeRGB(const cv::Mat& imageRGB, std::string filePath){
+void IO::writeRGBImage(const cv::Mat& imageRGB, std::string filePath){
 	// Convert the floating-point image to 8-bit integer
 	cv::Mat image8Bit;
 	cv::cvtColor(imageRGB, image8Bit, cv::COLOR_RGB2BGR);
@@ -213,7 +202,7 @@ void IO::storeRGB(const cv::Mat& imageRGB, std::string filePath){
 	cv::imwrite(filePath, image8Bit, compression_params);
 }
 
-std::vector<int> UTILS::convertStringToIntVector(const std::string& str){
+std::vector<int> UTILS::convertString2IntVector(const std::string& str){
 	std::vector<int> result;
 	std::istringstream iss(str);
 	std::string token;
@@ -225,7 +214,7 @@ std::vector<int> UTILS::convertStringToIntVector(const std::string& str){
 	return result;
 }
 
-std::vector<int> UTILS::getRandomSourceDistribution(const int* boundary, int rows, int cols, int N) {
+std::vector<int> UTILS::generateRandomDistribution(const int* boundary, int rows, int cols, int N) {
 	std::vector<int> sources;
 	sources.reserve(2 * N); // Reserve space for efficiency
 
@@ -251,7 +240,7 @@ std::vector<int> UTILS::getRandomSourceDistribution(const int* boundary, int row
 	return sources;
 }
 
-cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverageMap, const float radius, int rows, int cols, int numSources) {
+cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverageMap, const int* sourceDistribution, int numSources, const float radius, int rows, int cols) {
 	int numElements = rows * cols;
 	
 	int* deviceBoundary;
@@ -259,6 +248,9 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 
 	MapElement* deviceCoverageMap;
 	CUDA::allocateAndCopy(deviceCoverageMap, coverageMap, numElements);
+
+	int* deviceSourceDistribution;
+	CUDA::allocateAndCopy(deviceSourceDistribution, sourceDistribution, numSources * 2);
 
 	float* outputR;
 	float* outputG; 
@@ -270,8 +262,8 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	processResultsRGB_ << < blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, outputR, outputG, outputB, radius, numElements, cols);
-	CUDA::synchronize();
+	processResultsRGB_ << < blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, deviceSourceDistribution, numSources, outputR, outputG, outputB, radius, numElements, cols);
+	CUDA::sync();
 
 	float* R = new float[numElements];
 	float* G = new float[numElements];
@@ -286,21 +278,10 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 	CUDA::free(outputR);
 	CUDA::free(outputG);
 	CUDA::free(outputB);
+	CUDA::free(deviceBoundary);
+	CUDA::free(deviceCoverageMap);
+	CUDA::free(deviceSourceDistribution);
 
 	return colorMap;
 }
 
-void UTILS::initializeCoverageMap(MapElement* coverageMap, const float initDist, const int initPredecessor, const int size) {
-	for (int i = 0; i < size; i++)
-		coverageMap[i] = MapElement{ initDist, initPredecessor, initPredecessor };
-}
-
-void UTILS::initializeSources(MapElement* coverageMap, const std::vector<int>& sourceDistribution, const int numSources, const int cols)
-{
-	int j = -1;
-	for (int i = 0; i < 2 * numSources; i += 2) {
-		int index = sourceDistribution[i + 1] * cols + sourceDistribution[i];
-		coverageMap[index].distance = 0.0f;
-		coverageMap[index].predecessor = index;
-	}
-}

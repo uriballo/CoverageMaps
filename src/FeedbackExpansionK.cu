@@ -55,7 +55,7 @@ __device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverag
 
 			int neighIndex = coordsToIndex(nx, ny, cols);
 
-			if (inBounds && neighIndex != pointIndex) {
+			if (inBounds && neighIndex != pointIndex && coverageMap[neighIndex].predecessor != -1) {
 				int cellValue = tex2D<int>(domainTex, nx, ny);
 				if (cellValue > -1) {
 					updates = updates || checkNeighInfo(domainTex, coverageMap, pointInfo, coverageMap[neighIndex], predPredInfo, pointIndex, neighIndex, rows, cols, radius);
@@ -73,16 +73,13 @@ __device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverag
 __device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
 	bool expanded = false;
 
-	if (neighInfo.predecessor == -1)
-		return expanded;
-
 	if (canUpdateInfo(domainTex, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
 		float currentDistance = pointInfo.distance;
 		float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
 
 		int predecessor = suitablePredecessor(domainTex, neighInfo.predecessor, neighIndex, cols);
 
-		bool similarEnough = abs(currentDistance - tentativeDistance) < 0.0001;//(sqrtf(2) - 1) * 0.49;
+		bool similarEnough = abs(currentDistance - tentativeDistance) < (sqrtf(2) - 1) * 0.0001;
 
 		float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);

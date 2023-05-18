@@ -3,8 +3,11 @@
 cudaTextureObject_t getDomainGPU(const int* hostDomain, int rows, int cols, cudaArray** domainArray) {
 	// Create a CUDA array
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<int>();
-	cudaMallocArray(domainArray, &channelDesc, cols, rows);
-	cudaMemcpyToArray(*domainArray, 0, 0, hostDomain, rows * cols * sizeof(int), cudaMemcpyHostToDevice);
+
+	CUDA::allocateArray(*domainArray, channelDesc, cols, rows);
+//	cudaMallocArray(domainArray, &channelDesc, cols, rows);
+//	cudaMemcpyToArray(*domainArray, 0, 0, hostDomain, rows * cols * sizeof(int), cudaMemcpyHostToDevice);
+	CUDA::copyToArray(*domainArray, hostDomain, rows * cols);
 
 	// Create a texture object
 	cudaTextureObject_t texDomainObj = 0;
@@ -26,13 +29,13 @@ cudaTextureObject_t getDomainGPU(const int* hostDomain, int rows, int cols, cuda
 	return texDomainObj;
 }
 
-
 void runExactExpansion(configuration& config) {
 	int rows, cols;
-
 	int* domain = IO::preProcessDomainImage(config.imagePath, rows, cols);
-
 	int numElements = rows * cols;
+
+	config.solutionData = "";
+	config.solutionData += "Domain dimensions: " + std::to_string(rows) + " x " + std::to_string(cols) + " (" + std::to_string(numElements) + " pixels) \n\n";
 	
 	if (config.storeBoundary) {
 		IO::writeIntMatrix(domain, rows, cols, "domain");
@@ -41,20 +44,16 @@ void runExactExpansion(configuration& config) {
 	std::vector<int> servicesDistribution;
 
 	if (config.customDistribution) {
-		servicesDistribution = UTILS::convertStringToIntVector(config.serviceDistribution);
+		servicesDistribution = UTILS::convertString2IntVector(config.serviceDistribution);
 	}
 	else {
-		servicesDistribution = UTILS::getRandomSourceDistribution(domain, rows, cols, config.numberOfServices);
+		servicesDistribution = UTILS::generateRandomDistribution(domain, rows, cols, config.numberOfServices);
 	}
 
 
 	cudaArray* domainArray;
 	cudaTextureObject_t texDomainObj = getDomainGPU(domain, rows, cols, &domainArray);
 
-	config.solutionData = "";
-	config.solutionData += "Domain dimensions: " + std::to_string(rows) + " x " + std::to_string(cols) + " ("+ std::to_string(numElements) + " pixels) \n\n";
-
-//	int* deviceDomain = getDomainGPU(domain, numElements);
 	MapElement* deviceCoverageMap = initialCoverageMapGPU(servicesDistribution, config.numberOfServices, rows, cols, config.serviceRadius + FLT_MIN, -1);
 
 	auto startTime = std::chrono::steady_clock::now();
@@ -67,8 +66,8 @@ void runExactExpansion(configuration& config) {
 
 	config.solutionData += "Coverage map compute time: " + std::to_string(seconds) + " (s)\n";
 
-	cv::Mat processedResultsRGB = UTILS::processResultsRGB(domain, coverageMap, config.serviceRadius, rows, cols, config.numberOfServices);
-	IO::storeRGB(processedResultsRGB, "output/" + config.imageName);
+	cv::Mat processedResultsRGB = UTILS::processResultsRGB(domain, coverageMap, servicesDistribution.data(), config.numberOfServices, config.serviceRadius, rows, cols);
+	IO::writeRGBImage(processedResultsRGB, "output/" + config.imageName);
 
 	cudaDestroyTextureObject(texDomainObj);
 	cudaFreeArray(domainArray);
@@ -92,7 +91,7 @@ MapElement* initialCoverageMapGPU(std::vector<int> servicesDistribution, int num
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
 	initCoverageMap << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, initRadius, initPredecessor, deviceServices, numServices, numElements, cols);
-	CUDA::synchronize();
+	CUDA::sync();
 
 	return deviceCoverageMap;
 }
@@ -117,9 +116,10 @@ MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* devic
 	config.solutionData += "Number of blocks: " + std::to_string(blocksPerGrid.x * blocksPerGrid.y) + "\n";
 
 	int iterations = 1;
-	CUDA::allocate(deviceFlag, 1);
-	MapElement* intermediateResult = new MapElement[numElements];
 
+	CUDA::allocate(deviceFlag, 1);
+	
+	MapElement* intermediateResult = new MapElement[numElements];
 	bool storeData = config.storeIterCoverage;
 
 	do {
@@ -128,27 +128,27 @@ MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* devic
 		do {
 			CUDA::set(deviceFlag, false);
 			euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (domainTexture, deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
-			CUDA::synchronize();
+			CUDA::sync();
 			CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
 
 			if (storeData) {
 				CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
 				std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
-				IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
+				IO::writeCoverageMap(intermediateResult, rows, cols, fileName);
 				innerIterations++;
 			}
 		} while (hostFlag);
 
 		CUDA::set(deviceFlag, false);
 		EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
-		CUDA::synchronize();
+		CUDA::sync();
 		CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
 
 		if (storeData) {
 			CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
 
 			std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
-			IO::writeCUDAPairMatrix(intermediateResult, rows, cols, fileName);
+			IO::writeCoverageMap(intermediateResult, rows, cols, fileName);
 		}
 		iterations++;
 
@@ -159,7 +159,6 @@ MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* devic
 	MapElement* hostCoverageMap = new MapElement[numElements];
 	CUDA::copyDeviceToHost(hostCoverageMap, deviceCoverageMap, numElements);
 
-	//CUDA::free(deviceBoundary);
 	CUDA::free(deviceCoverageMap);
 	CUDA::free(deviceFlag);
 

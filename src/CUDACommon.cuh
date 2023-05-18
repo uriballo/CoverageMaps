@@ -112,7 +112,75 @@ __global__ __inline__ void preProcessDomain(const float* rawImage, int* domain, 
 	}
 }
 
-__global__ __inline__ void processResultsRGB_(const int* boundary,  const MapElement* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
+__device__ __inline__ void pickColor(int sourceIndex, int* sourceDistribution, int numSources, float& R, float& G, float& B, int cols) {
+	int id;
+	int j = -1;
+	for (int i = 0; i < numSources * 2; i += 2) {
+		j++;
+
+		id = coordsToIndex(sourceDistribution[i], sourceDistribution[i + 1], cols);
+
+		if (id == sourceIndex)
+			break;
+	}
+
+	int normalizedId = j % 10;
+
+	switch (normalizedId) {
+		case 0:
+			R = 254;
+			G = 187;
+			B = 187;
+			break;
+		case 01:
+			R = 252;
+			G = 213;
+			B = 206;
+			break;
+		case 2:
+			R = 250;
+			G = 225;
+			B = 221;
+			break;
+		case 3:
+			R = 248;
+			G = 237;
+			B = 235;
+			break;
+		case 4:
+			R = 232;
+			G = 232;
+			B = 228;
+			break;
+		case 5:
+			R = 216;
+			G = 226;
+			B = 220;
+			break;
+		case 6:
+			R = 236;
+			G = 228;
+			B = 219;
+			break;
+		case 7:
+			R = 255;
+			G = 229;
+			B = 217;
+			break;
+		case 8:
+			R = 255;
+			G = 215;
+			B = 186;
+			break;
+		case 9:
+			R = 254;
+			G = 200;
+			B = 154;
+			break;
+	}
+}
+
+__global__ __inline__ void processResultsRGB_(const int* boundary,  const MapElement* distanceMap, int* sourceDistribution, int numSources, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
 
@@ -139,10 +207,12 @@ __global__ __inline__ void processResultsRGB_(const int* boundary,  const MapEle
 				}
 				else {	
 					float tint = (1.0 - pixelValue / radius);
+					
+					pickColor(distanceMap[tid].source, sourceDistribution, numSources, R, G, B, cols);
 
-					R = 149.0f;
-					G = 152.0f;
-					B = 144.0f;
+				//	R = 149.0f;
+				//	G = 152.0f;
+				//	B = 144.0f;
 
 					R = R + (255.0f - R) * tint;
 					G = G + (255.0f - G) * tint;
@@ -160,53 +230,6 @@ __global__ __inline__ void processResultsRGB_(const int* boundary,  const MapEle
 			}
 		}
 	}
-}
-
-__global__ __inline__ void getBlockID(float* blockIDs, int rows, int cols) {
-	// Determine pixel to be processed by thread.
-	//int tid = getThreadId();
-
-	int tidX, tidY;
-	get2DThreadId(tidX, tidY);
-
-	// Check that the value is within the boundaries.
-	if (tidX < cols && tidY < rows) {
-		int blockId = blockIdx.y * gridDim.x + blockIdx.x;
-	
-		int tid = coordsToIndex(tidX, tidY, cols);
-		blockIDs[tid] = static_cast<float>(blockId);
-	}
-}
-
-__device__ __inline__ bool isCorner(const bool* boundary, const int pixelIndex, int rows, int cols) {
-	int x = 0, y = 0;
-	indexToCoords(pixelIndex, x, y, cols);
-	
-	int hits = 0;
-	int neigh = 0;
-
-	for (int i = -1; i < 2; i++) {
-		for (int j = -1; j < 2; j++) {
-			int newX = x + i;
-			int newY = y + j;
-
-			bool xInBounds = newX < cols && newX >= 0;
-			bool yInBounds = newY < rows && newY >= 0;
-			bool inBounds = xInBounds && yInBounds;
-
-			int neighIndex = coordsToIndex(newX, newY, cols);
-
-		//	if (i * j != 0)
-				if (inBounds)
-					if (boundary[neighIndex]) {
-						neigh++;
-						if (i * j != 0)
-							hits++;
-					}
-		}
-	}
-
-	return hits == 1 && neigh > 1;
 }
 
 // DISTANCES

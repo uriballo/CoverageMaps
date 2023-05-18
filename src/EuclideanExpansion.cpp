@@ -12,7 +12,7 @@ void runEuclideanExpansion(configuration config) {
 	std::vector<int> servicesDistribution;
 
 	if (config.customDistribution) {
-		servicesDistribution = UTILS::convertStringToIntVector(config.serviceDistribution);
+		servicesDistribution = UTILS::convertString2IntVector(config.serviceDistribution);
 	}
 	else {
 		// TODO: UPDATE to INT*
@@ -67,7 +67,7 @@ float* computeCoverageMap(const bool* boundary, const std::vector<int>& sourceDi
 	do {
 		CUDA::set(deviceFlag, false);
 		euclideanExpansionKernel << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceMap, deviceFlag, rows, cols);
-		CUDA::synchronize();
+		CUDA::sync();
 		CUDA::copyVarDeviceToHost(&hostFlag, deviceFlag);
 	} while (hostFlag);
 

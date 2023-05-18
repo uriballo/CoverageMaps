@@ -1,7 +1,7 @@
 #include "FeedbackExpansionK.cuh"
 #include <iostream>
 
-__global__ void euclideanExpansion(const int* boundary, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
+__global__ void euclideanExpansion(cudaTextureObject_t domainTex, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
 	int tidX, tidY;
 	get2DThreadId(tidX, tidY);
 	
@@ -19,8 +19,9 @@ __global__ void euclideanExpansion(const int* boundary, MapElement* coverageMap,
 
 		int tid = coordsToIndex(tidX, tidY, cols);
 
-		if (tidX < cols && tidY < rows && boundary[tid] > -1) {
-			bool updated = listenUpdates(boundary, coverageMap, tidX, tidY, rows, cols, radius);
+		int cellValue = tex2D<int>(domainTex, tidX, tidY);
+		if (tidX < cols && tidY < rows && cellValue > -1) {
+			bool updated =  listenUpdates(domainTex, coverageMap, tidX, tidY, rows, cols, radius);
 
 			if (updated)
 				blockChanges = true;
@@ -35,7 +36,7 @@ __global__ void euclideanExpansion(const int* boundary, MapElement* coverageMap,
 	
 }
 
-__device__ bool listenUpdates(const int* boundary, MapElement* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
+__device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
 	bool updates = false;
 
 	int pointIndex = coordsToIndex(tidX, tidY, cols);
@@ -55,9 +56,9 @@ __device__ bool listenUpdates(const int* boundary, MapElement* coverageMap, int 
 			int neighIndex = coordsToIndex(nx, ny, cols);
 
 			if (inBounds && neighIndex != pointIndex) {
-
-				if (boundary[neighIndex] > -1) {
-					updates = updates || checkNeighInfo(boundary, coverageMap, pointInfo, coverageMap[neighIndex], predPredInfo, pointIndex, neighIndex, rows, cols, radius);
+				int cellValue = tex2D<int>(domainTex, nx, ny);
+				if (cellValue > -1) {
+					updates = updates || checkNeighInfo(domainTex, coverageMap, pointInfo, coverageMap[neighIndex], predPredInfo, pointIndex, neighIndex, rows, cols, radius);
 				}
 			}
 		}
@@ -69,24 +70,19 @@ __device__ bool listenUpdates(const int* boundary, MapElement* coverageMap, int 
 	return updates;
 }
 
-__device__ bool checkNeighInfo(const int* boundary, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
+__device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
 	bool expanded = false;
 
 	if (neighInfo.predecessor == -1)
 		return expanded;
 
-	if (canUpdateInfo(boundary, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
+	if (canUpdateInfo(domainTex, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
 		float currentDistance = pointInfo.distance;
+		float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
 
-		float distanceToNeigh = indexDistance(pointIndex, neighIndex, cols);
-		float tentativeDistance = neighInfo.distance + distanceToNeigh;
+		int predecessor = suitablePredecessor(domainTex, neighInfo.predecessor, neighIndex, cols);
 
-		int predecessor = suitablePredecessor(boundary, neighInfo.predecessor, pointIndex, neighIndex, rows, cols, radius);
-
-		float threshold = (sqrtf(2) - 1) * 0.49;
-
-		float diff = abs(currentDistance - tentativeDistance);
-		bool similarEnough = diff < threshold;
+		bool similarEnough = abs(currentDistance - tentativeDistance) < 0.0001;//(sqrtf(2) - 1) * 0.49;
 
 		float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
@@ -94,11 +90,15 @@ __device__ bool checkNeighInfo(const int* boundary, MapElement* coverageMap, Map
 		if ((similarEnough && distToPotentialPred < distToPredecessor)
 			|| (!similarEnough && tentativeDistance < currentDistance)){
 			
-			// TEST VISIBILITAT AQUI
-			
-		//	if ((similarEnough && distToPotentialPred < distToPredecessor) && pointInfo.second != -1) {
-		//	  printf("> Tentative: %f\n\t, Current %f\n\t, Tentative - Current Distance is: %f\n\tneigh: %d\n\t, pred: %d\n\t, potentialPred: %d\n\t, isPredCorner: %d\n\t, isPotPredCorner: %d\n\t, pixelIndex %d\n\n", tentativeDistance, currentDistance,  diff , neighIndex, pointInfo.second, predecessor, isCorner(boundary, pointInfo.second, rows, cols), isCorner(boundary, predecessor, rows, cols ), pointIndex);
-		//	}
+			int predX, predY;
+			indexToCoords(predecessor, predX, predY, cols);
+
+			int currentX, currentY;
+			indexToCoords(pointIndex, currentX, currentY, cols);
+
+			if (!visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY)) {
+				return false;
+			}
 
 			MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
 
@@ -111,13 +111,18 @@ __device__ bool checkNeighInfo(const int* boundary, MapElement* coverageMap, Map
 	return expanded;
 }
 
-__device__ bool canUpdateInfo(const int* boundary, MapElement* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
+__device__ bool canUpdateInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, int pointIndex, int neighIndex, int firstPredecessor, int secondPredecessor, int rows, int cols) {
 	bool canUpdate = false;
 
-	if (firstPredecessor == -1 || boundary[firstPredecessor] == 0 /*!isCorner(boundary, firstPredecessor, rows, cols)*/) {
+	int predX, predY;
+	indexToCoords(firstPredecessor, predX, predY, cols);
+
+	int cellValue = tex2D<int>(domainTex, predX, predY);
+
+	if (firstPredecessor == -1 || cellValue == 0 /*!isCorner(boundary, firstPredecessor, rows, cols)*/) {
 		canUpdate = true;
 	}
-	else {
+	else if (coverageMap[pointIndex].source == coverageMap[neighIndex].source) {
 		int pX, pY;
 		indexToCoords(pointIndex, pX, pY, cols);
 
@@ -142,18 +147,26 @@ __device__ bool canUpdateInfo(const int* boundary, MapElement* coverageMap, int 
 			}
 		}
 	}
+	else {
+		canUpdate = true;
+	}
 
 	return canUpdate;
 }
 
-__device__ int suitablePredecessor(const int* boundary, int predecessorIndex, int pointIndex, int neighIndex, int rows, int cols, float radius) {
-	if (boundary[neighIndex] == 0)
+__device__ int suitablePredecessor(cudaTextureObject_t domainTex, int predecessorIndex, int neighIndex, int cols) {
+	int neighX, neighY;
+	indexToCoords(neighIndex, neighX, neighY, cols);
+
+	int cellValue = tex2D<int>(domainTex, neighX, neighY);
+
+	if (cellValue == 0)
 		return predecessorIndex;
 	else
 		return neighIndex;
 }
 
-__global__ void EEDT(const int* boundary, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
+__global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
 	// Get the ID of the thread
 
 	int tidX, tidY;
@@ -165,7 +178,7 @@ __global__ void EEDT(const int* boundary, MapElement* coverageMap, bool* globalC
 
 	MapElement pointInfo = coverageMap[tid];
 
-	if (boundary[tid] > -1 && pointInfo.distance > 0 && pointInfo.distance < (radius + FLT_MIN) ) {
+	if (pointInfo.distance > 0 && pointInfo.distance < (radius + FLT_MIN) ) {
 		float exactDistance = computeDistance(coverageMap, tid, cols);
 
 		if (exactDistance != -1 && exactDistance < pointInfo.distance) {
@@ -200,4 +213,38 @@ __global__ void initCoverageMap(MapElement* coverageMap, float initRadius, int i
 			coverageMap[serviceIndex].source = serviceIndex;
 		}
 	}
+}
+
+__device__  bool visibilityTest(cudaTextureObject_t domainTex, int rows, int cols, int oX, int oY, int gX, int gY) {
+	int dx = abs(gX - oX);
+	int dy = abs(gY - oY);
+	int sx = (oX < gX) ? 1 : -1;
+	int sy = (oY < gY) ? 1 : -1;
+	int err = dx - dy;
+
+	while (true) {
+		int cellValue = tex2D<int>(domainTex, oX, oY);
+		if (cellValue == -1)
+			return false;
+
+		if (oX == gX && oY == gY)
+			break;
+
+		int e2 = 2 * err;
+
+		if (e2 > -dy) {
+			err -= dy;
+			oX += sx;
+		}
+
+		if (e2 < dx) {
+			err += dx;
+			oY += sy;
+		}
+
+		if (oX >= cols || oX < 0 || oY >= rows || oY < 0)
+			return false;
+	}
+
+	return true;
 }

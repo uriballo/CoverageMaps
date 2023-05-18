@@ -12,7 +12,7 @@ MapElement* initialCoverageMapGPU(std::vector<int> servicesDistribution, int num
 
 int* getDomainGPU(const int* hostDomain, int numElements);
 
-MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, configuration& config, int rows, int cols);
+MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, configuration& config, int rows, int cols);
 
 //#endif
 

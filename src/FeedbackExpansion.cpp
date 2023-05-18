@@ -1,5 +1,32 @@
 #include "FeedbackExpansion.h"
 
+cudaTextureObject_t getDomainGPU(const int* hostDomain, int rows, int cols, cudaArray** domainArray) {
+	// Create a CUDA array
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<int>();
+	cudaMallocArray(domainArray, &channelDesc, cols, rows);
+	cudaMemcpyToArray(*domainArray, 0, 0, hostDomain, rows * cols * sizeof(int), cudaMemcpyHostToDevice);
+
+	// Create a texture object
+	cudaTextureObject_t texDomainObj = 0;
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(resDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = *domainArray;
+
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(texDesc));
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.addressMode[1] = cudaAddressModeClamp;
+	texDesc.filterMode = cudaFilterModePoint;
+	texDesc.readMode = cudaReadModeElementType;
+	texDesc.normalizedCoords = 0;
+
+	cudaCreateTextureObject(&texDomainObj, &resDesc, &texDesc, NULL);
+
+	return texDomainObj;
+}
+
+
 void runExactExpansion(configuration& config) {
 	int rows, cols;
 
@@ -20,15 +47,19 @@ void runExactExpansion(configuration& config) {
 		servicesDistribution = UTILS::getRandomSourceDistribution(domain, rows, cols, config.numberOfServices);
 	}
 
+
+	cudaArray* domainArray;
+	cudaTextureObject_t texDomainObj = getDomainGPU(domain, rows, cols, &domainArray);
+
 	config.solutionData = "";
 	config.solutionData += "Domain dimensions: " + std::to_string(rows) + " x " + std::to_string(cols) + " ("+ std::to_string(numElements) + " pixels) \n\n";
 
-	int* deviceDomain = getDomainGPU(domain, numElements);
+//	int* deviceDomain = getDomainGPU(domain, numElements);
 	MapElement* deviceCoverageMap = initialCoverageMapGPU(servicesDistribution, config.numberOfServices, rows, cols, config.serviceRadius + FLT_MIN, -1);
 
 	auto startTime = std::chrono::steady_clock::now();
 
-	MapElement* coverageMap = computeCoverage(deviceDomain, deviceCoverageMap, config, rows, cols);// computeCoverage(domain, servicesDistribution, config, rows, cols);
+	MapElement* coverageMap = computeCoverage(texDomainObj, deviceCoverageMap, config, rows, cols);// computeCoverage(domain, servicesDistribution, config, rows, cols);
 
 	auto endTime = std::chrono::steady_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
@@ -38,6 +69,9 @@ void runExactExpansion(configuration& config) {
 
 	cv::Mat processedResultsRGB = UTILS::processResultsRGB(domain, coverageMap, config.serviceRadius, rows, cols, config.numberOfServices);
 	IO::storeRGB(processedResultsRGB, "output/" + config.imageName);
+
+	cudaDestroyTextureObject(texDomainObj);
+	cudaFreeArray(domainArray);
 
 	delete[] coverageMap;
 	delete[] domain;
@@ -70,7 +104,7 @@ int* getDomainGPU(const int* hostDomain, int numElements) {
 	return deviceDomain;
 }
 
-MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, configuration& config, int rows, int cols) {
+MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, configuration& config, int rows, int cols) {
 	bool hostFlag = false;
 	bool* deviceFlag;
 
@@ -93,7 +127,7 @@ MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, 
 
 		do {
 			CUDA::set(deviceFlag, false);
-			euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
+			euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (domainTexture, deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
 			CUDA::synchronize();
 			CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
 
@@ -106,7 +140,7 @@ MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, 
 		} while (hostFlag);
 
 		CUDA::set(deviceFlag, false);
-		EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceBoundary, deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
+		EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, deviceFlag, rows, cols, config.serviceRadius);
 		CUDA::synchronize();
 		CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
 
@@ -125,7 +159,7 @@ MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, 
 	MapElement* hostCoverageMap = new MapElement[numElements];
 	CUDA::copyDeviceToHost(hostCoverageMap, deviceCoverageMap, numElements);
 
-	CUDA::free(deviceBoundary);
+	//CUDA::free(deviceBoundary);
 	CUDA::free(deviceCoverageMap);
 	CUDA::free(deviceFlag);
 

@@ -244,37 +244,5 @@ __device__ __inline__ float computeDistance(MapElement* distanceMap, int pointIn
 	return distance;
 }
 
-__device__ __inline__ bool visibilityTest(const bool* domain, int rows, int cols, int oX, int oY, int gX, int gY) {
-	int dx = abs(gX - oX);
-	int dy = abs(gY - oY);
-	int sx = (oX < gX) ? 1 : -1;
-	int sy = (oY < gY) ? 1 : -1;
-	int err = dx - dy;
-
-	while (true) {
-		if (domain[coordsToIndex(oX, oY, cols)])
-			return false;
-
-		if (oX == gX && oY == gY)
-			break;
-
-		int e2 = 2 * err;
-
-		if (e2 > -dy) {
-			err -= dy;
-			oX += sx;
-		}
-
-		if (e2 < dx) {
-			err += dx;
-			oY += sy;
-		}
-
-		if (oX >= cols || oX < 0 || oY >= rows || oY < 0)
-			return false;
-	}
-
-	return true;
-}
 
 //#endif // CUDACOMMON_CUH

@@ -112,60 +112,14 @@ __global__ __inline__ void preProcessDomain(const float* rawImage, int* domain, 
 	}
 }
 
-__global__ __inline__ void initCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols) {
-	int tid = getThreadId();
-
-	if (tid < numElements) {
-		MapElement currentCell;
-		
-		currentCell.distance = initRadius;
-		currentCell.predecessor = initPredecessor;
-		currentCell.source = initPredecessor;
-
-		coverageMap[tid] = currentCell;
-	}
-
-	//__syncthreads();
-
-	if (tid == 0) {
-		for (int i = 0; i < 2 * numServices; i+=2 ) {
-			int serviceIndex = coordsToIndex(servicesDistribution[i], servicesDistribution[i + 1], cols);
-
-			coverageMap[serviceIndex].distance = 0;
-			coverageMap[serviceIndex].predecessor = serviceIndex;
-			coverageMap[serviceIndex].source = serviceIndex;
-		}
-	}
-}
-
-__global__ __inline__ void processResultsBW_(const bool* boundary, const MapElement* distanceMap, float* output, const float radius, int numElements) {
+__global__ __inline__ void processResultsRGB_(const int* boundary,  const MapElement* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
 
 	// Check that the value is within the boundaries.
 	if (tid < numElements) {
 
-		bool isWall = boundary[tid];
-		float pixelValue = distanceMap[tid].distance;
-
-		if (isWall) {
-			output[tid] = 0.0f;
-		}
-		else {
-			if (pixelValue != 0.0f)
-				output[tid] = pixelValue < (radius + FLT_MIN) ? 1.0f : 0.5f;
-		}
-	}
-}
-
-__global__ __inline__ void processResultsRGB_(const bool* boundary,  const MapElement* distanceMap, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
-	// Determine pixel to be processed by thread.
-	int tid = getThreadId();
-
-	// Check that the value is within the boundaries.
-	if (tid < numElements) {
-
-		bool isWall = boundary[tid];
+		bool isWall = boundary[tid] == -1;
 		float pixelValue = distanceMap[tid].distance;
 
 		if (isWall ) {
@@ -185,7 +139,6 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary,  const MapEl
 				}
 				else {	
 					float tint = (1.0 - pixelValue / radius);
-					// float tint = 1.0f / (1.0f + exp(-10.0f * (pixelValue / radius - 0.5f)));
 
 					R = 149.0f;
 					G = 152.0f;
@@ -195,9 +148,6 @@ __global__ __inline__ void processResultsRGB_(const bool* boundary,  const MapEl
 					G = G + (255.0f - G) * tint;
 					B = B + (255.0f - B) * tint;
 				}
-				
-				//int id = 2;//pointOrigin(distanceMap, sources, tid, cols);
-				//palette1(id, R, G, B);
 
 				outputR[tid] = R/255;
 				outputG[tid] = G/255;
@@ -226,50 +176,6 @@ __global__ __inline__ void getBlockID(float* blockIDs, int rows, int cols) {
 		int tid = coordsToIndex(tidX, tidY, cols);
 		blockIDs[tid] = static_cast<float>(blockId);
 	}
-}
-
-__global__ __inline__ void processResultsBW(const bool* boundary, const float* distanceMap, float* output, const float radius, int numElements) {
-	// Determine pixel to be processed by thread.
-	int tid = getThreadId();
-
-	// Check that the value is within the boundaries.
-	if (tid < numElements) {
-
-		bool isWall = boundary[tid];
-		float pixelValue = distanceMap[tid];
-
-		if (isWall) {
-			output[tid] = 0.0f;
-		}
-		else {
-			if (pixelValue != 0.0f)
-				output[tid] = pixelValue < (radius + FLT_MIN) ? 1.0f : 0.5f;
-		}
-	}
-}
-
-__device__ __inline__ bool isNearBoundary(const bool* boundary, const int pixelIndex, int rows, int cols) {
-	int x = 0, y = 0;
-	indexToCoords(pixelIndex, x, y, cols);
-
-	for (int i = -1; i < 2; i++) {
-		for (int j = -1; j < 2; j++) {
-			int newX = x + i;
-			int newY = y + j;
-
-			bool xInBounds = newX < cols && newX >= 0;
-			bool yInBounds = newY < rows && newY >= 0;
-			bool inBounds = xInBounds && yInBounds;
-
-			int neighIndex = coordsToIndex(newX, newY, cols);
-		//	if(newX * newY == 0)
-				if(inBounds)
-					if (boundary[neighIndex])
-						return true;
-		}
-	}
-
-	return false;
 }
 
 __device__ __inline__ bool isCorner(const bool* boundary, const int pixelIndex, int rows, int cols) {

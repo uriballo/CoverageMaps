@@ -15,19 +15,20 @@ void runEuclideanExpansion(configuration config) {
 		servicesDistribution = UTILS::convertStringToIntVector(config.serviceDistribution);
 	}
 	else {
-		servicesDistribution = UTILS::getRandomSourceDistribution(boundary, rows, cols, config.numberOfServices);
+		// TODO: UPDATE to INT*
+		//servicesDistribution = UTILS::getRandomSourceDistribution(boundary, rows, cols, config.numberOfServices);
 	}
 
 	float* coverageMap = computeCoverageMap(boundary, servicesDistribution, config.serviceRadius, rows, cols, config.numberOfServices);
 
 	IO::writeFloatMatrix(coverageMap, rows, cols, "coverage-map");
 
+	//TODO: UPDATE to RGB
+//	float* processedResult = UTILS::processResults(boundary, coverageMap, config.serviceRadius, rows, cols);
+//	cv::Mat map = IO::floatToCV(processedResult, rows, cols);
+//	IO::storeBWImage(map, "Coverage Map");
 
-	float* processedResult = UTILS::processResults(boundary, coverageMap, config.serviceRadius, rows, cols);
-	cv::Mat map = IO::floatToCV(processedResult, rows, cols);
-	IO::storeBWImage(map, "Coverage Map");
-
-	delete[] processedResult;
+//	delete[] processedResult;
 
 	delete[] coverageMap;
 	delete[] boundary;

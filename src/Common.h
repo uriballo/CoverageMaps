@@ -39,11 +39,15 @@ struct configuration {
 namespace IO {
 	bool* extractImageBoundary(const std::string filePath, int& rows, int& cols);
 
+	int* preProcessDomainImage(const std::string filePath, int& rows, int& cols);
+
 	cv::Mat readImage(const std::string path, cv::ImreadModes mode);
 
 	float* cvBW2FloatArray(const cv::Mat& image);
 
 	void writeBoolMatrix(bool* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
+
+	void writeIntMatrix(int* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
 	void writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
@@ -122,11 +126,9 @@ namespace CUDA {
 namespace UTILS {
 	std::vector<int> convertStringToIntVector(const std::string& str);
 
-	std::vector<int> getRandomSourceDistribution(const bool* boundary, int rows, int cols, int N);
+	std::vector<int> getRandomSourceDistribution(const int* boundary, int rows, int cols, int N);
 
-	float* processResults(const bool* boundary, const float* coverageMap, const float radius, int rows, int cols);
-
-	cv::Mat processResultsRGB(const bool* boundary,  const MapElement* coverageMap, const float radius, int rows, int cols, int numSources);
+	cv::Mat processResultsRGB(const int* boundary,  const MapElement* coverageMap, const float radius, int rows, int cols, int numSources);
 
 	void initializeCoverageMap(MapElement* coverageMap, const float initDist, const int initPredecessor, const int size);
 

@@ -8,7 +8,11 @@
 
 void runExactExpansion(configuration& config);
 
-MapElement* computeCoverage(const bool* boundary, const std::vector<int>& sourceDistribution, configuration& config, int rows, int cols);
+MapElement* initialCoverageMapGPU(std::vector<int> servicesDistribution, int numServices, int rows, int cols, float initRadius, int initPredecessor);
+
+int* getDomainGPU(const int* hostDomain, int numElements);
+
+MapElement* computeCoverage(int* deviceBoundary, MapElement* deviceCoverageMap, configuration& config, int rows, int cols);
 
 //#endif
 

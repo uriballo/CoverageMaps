@@ -41,6 +41,42 @@ bool* IO::extractImageBoundary(const std::string filePath, int& rows, int& cols)
 	return result;
 }
 
+int* IO::preProcessDomainImage(const std::string filePath, int& rows, int& cols) {
+	// Read the image file into a matrix.
+	cv::Mat image = readImage(filePath, cv::IMREAD_GRAYSCALE);
+
+	// Store some properties of the image in variables.
+	rows = image.rows;
+	cols = image.cols;
+	int numElements = rows * cols;
+
+	// Convert the matrix to a flat array of floats.
+	float* hostImage = cvBW2FloatArray(image);
+
+	int* deviceDomain;
+	CUDA::allocate(deviceDomain, numElements);
+
+	float* deviceImage;
+	CUDA::allocateAndCopy(deviceImage, hostImage, numElements);
+
+	// Set up the dimensions for the GPU kernel.
+	dim3 threadsPerBlock(16, 16);
+	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+	preProcessDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
+	CUDA::synchronize();
+
+	int* hostDomain = new int[numElements];
+	CUDA::copyDeviceToHost(hostDomain, deviceDomain, numElements);
+
+	CUDA::free(deviceDomain);
+	CUDA::free(deviceImage);
+
+	delete[] hostImage;
+
+	return hostDomain;
+}
+
 cv::Mat IO::readImage(const std::string path, cv::ImreadModes mode) {
 	// Load image in grayscale mode
 	cv::Mat img = cv::imread(path, mode);
@@ -81,6 +117,19 @@ void IO::writeBoolMatrix(bool* mat, int rows, int cols, std::string fileName, st
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
 			outFile << std::setw(1) << mat[i * cols + j] << " ";
+		}
+		outFile << std::endl;
+	}
+	outFile.close();
+}
+
+void IO::writeIntMatrix(int* mat, int rows, int cols, std::string fileName, std::string path, std::string extension)
+{
+	std::ofstream outFile;
+	outFile.open(path + fileName + extension);
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			outFile << std::setw(2) << mat[i * cols + j] << " ";
 		}
 		outFile << std::endl;
 	}
@@ -176,7 +225,7 @@ std::vector<int> UTILS::convertStringToIntVector(const std::string& str){
 	return result;
 }
 
-std::vector<int> UTILS::getRandomSourceDistribution(const bool* boundary, int rows, int cols, int N) {
+std::vector<int> UTILS::getRandomSourceDistribution(const int* boundary, int rows, int cols, int N) {
 	std::vector<int> sources;
 	sources.reserve(2 * N); // Reserve space for efficiency
 
@@ -192,7 +241,7 @@ std::vector<int> UTILS::getRandomSourceDistribution(const bool* boundary, int ro
 		int y = rowDistribution(gen);
 		int index = y * cols + x;
 
-		if (!boundary[index]) {
+		if (boundary[index] > -1) {
 			sources.push_back(x);
 			sources.push_back(y);
 			i += 2;
@@ -202,39 +251,10 @@ std::vector<int> UTILS::getRandomSourceDistribution(const bool* boundary, int ro
 	return sources;
 }
 
-float* UTILS::processResults(const bool* boundary, const float* coverageMap, const float radius, int rows, int cols) {
-	const int numElements = rows * cols;
-
-	float* deviceOutput;
-	CUDA::allocate(deviceOutput, numElements);
-
-	float* deviceCoverage;
-	CUDA::allocateAndCopy(deviceCoverage, coverageMap, numElements);
-
-	bool* deviceDomain;
-	CUDA::allocateAndCopy(deviceDomain, boundary, numElements);
-
-	dim3 threadsPerBlock(16, 16);
-	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-	processResultsBW << < blocksPerGrid, threadsPerBlock >> > (deviceDomain, deviceCoverage, deviceOutput, radius, rows * cols);
-	CUDA::synchronize();
-
-	float* result = new float[numElements];
-
-	CUDA::copyDeviceToHost(result, deviceOutput, numElements);
-
-	CUDA::free(deviceOutput);
-	CUDA::free(deviceCoverage);
-	CUDA::free(deviceDomain);
-
-	return result;
-}
-
-cv::Mat UTILS::processResultsRGB(const bool* boundary, const MapElement* coverageMap, const float radius, int rows, int cols, int numSources) {
+cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverageMap, const float radius, int rows, int cols, int numSources) {
 	int numElements = rows * cols;
 	
-	bool* deviceBoundary;
+	int* deviceBoundary;
 	CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
 
 	MapElement* deviceCoverageMap;

@@ -22,6 +22,8 @@ __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int
 
 __global__ void initCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols);
 
+__global__ void evalCoverage(cudaTextureObject_t domainTex, MapElement* coverageMap, int rows, int cols, int* interiorPoints, int* coveredPoints);
+
 __device__ bool visibilityTest(cudaTextureObject_t domainTex, int rows, int cols, int oX, int oY, int gX, int gY);
 
 

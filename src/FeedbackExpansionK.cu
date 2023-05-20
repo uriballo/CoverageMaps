@@ -180,7 +180,17 @@ __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int
 
 		if (exactDistance != -1 && exactDistance < pointInfo.distance) {
 			coverageMap[tid].distance = exactDistance;
-			*globalChanges = true;
+			bool test;
+
+			for (int i = 0; i < 2; i++) {
+				for (int j = 0; j < 2; j++) {
+					int index = coordsToIndex(tidX + i, tidY + j, cols);
+					if (coverageMap[index].predecessor == -1)
+						test = true;
+				}
+			}
+
+			*globalChanges = test;
 		}
 	}
 }
@@ -211,6 +221,26 @@ __global__ void initCoverageMap(MapElement* coverageMap, float initRadius, int i
 		}
 	}
 }
+
+__global__ void evalCoverage(cudaTextureObject_t domainTex, MapElement* coverageMap, int rows, int cols, int* interiorPoints, int* coveredPoints) {
+	int tidX, tidY;
+
+	get2DThreadId(tidX, tidY);
+
+	if (tidY < rows && tidX < cols) {
+		bool interiorPoint = tex2D<int>(domainTex, tidX, tidY) > -1;
+
+		int predecessor = coverageMap[coordsToIndex(tidX, tidY, cols)].predecessor;
+
+		if (interiorPoint) {
+			atomicAdd(interiorPoints, 1);
+			if (predecessor != -1) {
+				atomicAdd(coveredPoints, 1);
+			}
+		}
+	}
+}
+
 
 __device__  bool visibilityTest(cudaTextureObject_t domainTex, int rows, int cols, int oX, int oY, int gX, int gY) {
 	int dx = abs(gX - oX);

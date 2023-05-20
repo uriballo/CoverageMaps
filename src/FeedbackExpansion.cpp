@@ -29,6 +29,27 @@ cudaTextureObject_t getDomainGPU(const int* hostDomain, int rows, int cols, cuda
 	return texDomainObj;
 }
 
+float coveragePercent(cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols) {
+	int* deviceInteriorPoints;
+	CUDA::allocateAndSet(deviceInteriorPoints, 1, 0);
+
+	int* deviceCoveredPoints;
+	CUDA::allocateAndSet(deviceCoveredPoints, 1, 0);
+
+	dim3 threadsPerBlock(16, 16);
+	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+	evalCoverage << <blocksPerGrid, threadsPerBlock >> > (domainTexture, deviceCoverageMap, rows, cols, deviceInteriorPoints, deviceCoveredPoints);
+	CUDA::sync();
+
+	int interiorPoints, coveredPoints;
+	CUDA::copyDeviceToHost(&interiorPoints, deviceInteriorPoints, 1);
+	CUDA::copyDeviceToHost(&coveredPoints, deviceCoveredPoints, 1);
+
+//	std::cout << coveredPoints << " / " << interiorPoints << std::endl;
+	return 100* (static_cast<float>(coveredPoints) / static_cast<float>(interiorPoints));
+}
+
 void runExactExpansion(configuration& config) {
 	int rows, cols;
 	int* domain = IO::preProcessDomainImage(config.imagePath, rows, cols);
@@ -64,13 +85,18 @@ void runExactExpansion(configuration& config) {
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 	double seconds = duration.count() / 1000.0;
 
+	float coverage = coveragePercent(texDomainObj, deviceCoverageMap, rows, cols);
 	config.solutionData += "Coverage map compute time: " + std::to_string(seconds) + " (s)\n";
+	config.solutionData += "Coverage: " + std::to_string(coverage) + "% \n";
+
 
 	cv::Mat processedResultsRGB = UTILS::processResultsRGB(domain, coverageMap, servicesDistribution.data(), config.numberOfServices, config.serviceRadius, rows, cols);
 	IO::writeRGBImage(processedResultsRGB, "output/" + config.imageName);
 
 	cudaDestroyTextureObject(texDomainObj);
 	cudaFreeArray(domainArray);
+
+	CUDA::free(deviceCoverageMap);
 
 	delete[] coverageMap;
 	delete[] domain;
@@ -152,14 +178,14 @@ MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* devic
 		}
 		iterations++;
 
-	} while (hostFlag);
+	} while (hostFlag );
 
 	config.solutionData += "Total iterations: " + std::to_string(iterations) + "\n\n";
 	
 	MapElement* hostCoverageMap = new MapElement[numElements];
 	CUDA::copyDeviceToHost(hostCoverageMap, deviceCoverageMap, numElements);
 
-	CUDA::free(deviceCoverageMap);
+	//CUDA::free(deviceCoverageMap);
 	CUDA::free(deviceFlag);
 
 	return hostCoverageMap;

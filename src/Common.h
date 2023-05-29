@@ -35,6 +35,21 @@ struct configuration {
 	std::string solutionData;
 };
 
+struct AlgorithmParameters {
+	int numServices;
+	float serviceRadius;
+	bool useEuclideanExpansion;
+	bool useExactExpansion;
+};
+
+struct OptimizationParameters {
+	int numGenerations;
+	int populationSize;
+	float mutationRate;
+	float stopThreshold;
+};
+
+
 namespace IO {
 	bool* extractImageBoundary(const std::string filePath, int& rows, int& cols);
 
@@ -65,6 +80,10 @@ namespace UTILS {
 	std::vector<int> generateRandomDistribution(const int* boundary, int rows, int cols, int N);
 
 	cv::Mat processResultsRGB(const int* boundary, const MapElement* coverageMap, const int* sourceDistribution, int numSources, const float radius, int rows, int cols);
+
+	void freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray* domainArray, MapElement* deviceCoverageMap, int* domain);
+
+	cudaTextureObject_t convertDomain2Texture(const int* hostDomain, int rows, int cols, cudaArray** domainArray);
 }
 
 //#endif

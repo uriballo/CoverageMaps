@@ -65,50 +65,52 @@ __global__ __inline__ void extractBoundary(const float* image, bool* boundary, i
 	}
 }
 
-__device__ __inline__ bool isCorner(const float* rawImage, const int pixelIndex, int rows, int cols) {
+__device__ __inline__ bool checkIfCorner(const float* grayscaleImage, const int pixelIndex, int rows, int cols) {
 	int x = 0, y = 0;
-	indexToCoords(pixelIndex, x, y, cols);
+	indexToCoords(pixelIndex, x, y, cols); // Convert pixel index to coordinates
 
-	int hits = 0;
-	int neigh = 0;
+	int diagWallHits = 0; // Counter for corner hits
+	int wallHits = 0; // Counter for neighboring pixels
 
-	for (int i = -1; i < 2; i++) {
-		for (int j = -1; j < 2; j++) {
-			int newX = x + i;
-			int newY = y + j;
+	for (int i = -1; i < 2; i++) { // Loop over neighboring rows
+		for (int j = -1; j < 2; j++) { // Loop over neighboring columns
+			int newX = x + i; // Compute new x-coordinate
+			int newY = y + j; // Compute new y-coordinate
 
+			// Check if both x and y coordinates are within the image bounds
 			bool xInBounds = newX < cols && newX >= 0;
-			bool yInBounds = newY < rows && newY >= 0;
-			bool inBounds = xInBounds && yInBounds;
+			bool yInBounds = newY < rows && newY >= 0; 
+			bool inBounds = xInBounds && yInBounds; 
 
-			int neighIndex = coordsToIndex(newX, newY, cols);
+			int neighIndex = coordsToIndex(newX, newY, cols); 
 
-			if (inBounds)
-				if (rawImage[neighIndex] <= 127.5f) {
-					neigh++;
-					if (i * j != 0)
-						hits++;
+			if (inBounds) 
+				if (grayscaleImage[neighIndex] <= 127.5f) { // Check if the intensity of the neighboring pixel is less than or equal to 127.5 (Wall)
+					wallHits++;
+
+					if (i * j != 0) 
+						diagWallHits++; 			
 				}
 		}
 	}
 
-	return hits == 1 && neigh > 1;
+	return diagWallHits == 1 && wallHits > 1;
 }
 
-__global__ __inline__ void preProcessDomain(const float* rawImage, int* domain, int rows, int cols) {
-	int tid = getThreadId();
+__global__ __inline__ void processImageAsDomain(const float* grayscaleImage, int* domain, int rows, int cols) {
+	int threadId = getThreadId(); // Get the thread ID
 
 	int numElements = rows * cols;
 
-	if (tid < numElements) {
-		float pixelIntensity = rawImage[tid];
+	if (threadId < numElements) {
+		float pixelIntensity = grayscaleImage[threadId]; // Get the intensity of the pixel 
 
-		if (pixelIntensity <= 127.5f) // Wall
-			domain[tid] = -1;
-		else if (isCorner(rawImage, tid, rows, cols))
-			domain[tid] = 1; // Interior point corner
+		if (pixelIntensity <= 50.0f) // Check if the pixel intensity is less than or equal to 127.5 (Wall)
+			domain[threadId] = -1; // Assign -1 to the domain to represent a wall
+		else if (checkIfCorner(grayscaleImage, threadId, rows, cols)) 
+			domain[threadId] = 1; // Assign 1 to the domain to represent an interior point corner
 		else
-			domain[tid] = 0; // Interior point free
+			domain[threadId] = 0; // Assign 0 to the domain to represent an interior point free
 	}
 }
 

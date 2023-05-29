@@ -429,7 +429,6 @@ namespace CUDACoverageMaps {
 			// 
 			// solutionDataRTB
 			// 
-			this->solutionDataRTB->Enabled = false;
 			this->solutionDataRTB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
 			this->solutionDataRTB->Location = System::Drawing::Point(67, 604);

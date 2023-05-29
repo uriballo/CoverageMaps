@@ -73,4 +73,25 @@ namespace CUDA {
 	void inline copyToArray(cudaArray_t array, const T* hostPtr, size_t count) {
 		CUDA_CHECK(cudaMemcpyToArray(array, 0, 0, hostPtr, count * sizeof(T), cudaMemcpyHostToDevice));
 	}
+
+	cudaTextureObject_t inline createTextureObject(cudaArray* domainArray) {
+		cudaTextureObject_t texDomainObj = 0; // Initialize texture object
+
+		cudaResourceDesc resDesc;
+		memset(&resDesc, 0, sizeof(resDesc)); // Initialize resource descriptor
+		resDesc.resType = cudaResourceTypeArray; // Set resource type to array
+		resDesc.res.array.array = domainArray; // Set resource array to the input domain array
+
+		cudaTextureDesc texDesc;
+		memset(&texDesc, 0, sizeof(texDesc)); // Initialize texture descriptor
+		texDesc.addressMode[0] = cudaAddressModeClamp; // Set address mode in x-direction to clamp
+		texDesc.addressMode[1] = cudaAddressModeClamp; // Set address mode in y-direction to clamp
+		texDesc.filterMode = cudaFilterModePoint; // Set filter mode to point
+		texDesc.readMode = cudaReadModeElementType; // Set read mode to element type
+		texDesc.normalizedCoords = 0; // Set normalized coordinates to false
+
+		CUDA_CHECK(cudaCreateTextureObject(&texDomainObj, &resDesc, &texDesc, NULL)); // Create texture object
+
+		return texDomainObj; // Return created texture object
+	}
 }

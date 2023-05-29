@@ -10,9 +10,11 @@ void runExactExpansion(configuration& config);
 
 MapElement* initialCoverageMapGPU(std::vector<int> servicesDistribution, int numServices, int rows, int cols, float initRadius, int initPredecessor);
 
-int* getDomainGPU(const int* hostDomain, int numElements);
+int* convertDomain2Texture(const int* hostDomain, int numElements);
 
-cudaTextureObject_t getDomainGPU(const int* hostDomain, int rows, int cols, cudaArray** domainArray);
+cudaTextureObject_t convertDomain2Texture(const int* hostDomain, int rows, int cols, cudaArray** domainArray);
+
+float coveragePercent2(cudaTextureObject_t domainTexture, int* serviceDistribution, int numServices, float radius, MapElement* deviceCoverageMap, int rows, int cols);
 
 MapElement* computeCoverage(cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, configuration& config, int rows, int cols);
 

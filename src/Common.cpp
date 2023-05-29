@@ -63,7 +63,7 @@ int* IO::preProcessDomainImage(const std::string filePath, int& rows, int& cols)
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	preProcessDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
+	processImageAsDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
 	CUDA::sync();
 
 	int* hostDomain = new int[numElements];
@@ -283,5 +283,25 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 	CUDA::free(deviceSourceDistribution);
 
 	return colorMap;
+}
+
+void UTILS::freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray* domainArray, MapElement* deviceCoverageMap, int* domain){
+	cudaDestroyTextureObject(domainTexture);
+	cudaFreeArray(domainArray);
+	CUDA::free(deviceCoverageMap);
+	delete[] domain;
+}
+
+cudaTextureObject_t UTILS::convertDomain2Texture(const int* hostDomain, int rows, int cols, cudaArray** domainArray) {
+	// Create channel format descriptor for integer type
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<int>(); 
+
+	// Allocate memory for the device array
+	CUDA::allocateArray(*domainArray, channelDesc, cols, rows); 
+
+	// Copy host domain to device array
+	CUDA::copyToArray(*domainArray, hostDomain, rows * cols); 
+
+	return CUDA::createTextureObject(*domainArray);
 }
 

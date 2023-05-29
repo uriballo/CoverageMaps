@@ -73,19 +73,19 @@ __device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverag
 __device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
 	bool expanded = false;
 
-	if (canUpdateInfo(domainTex, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
+//	if (canUpdateInfo(domainTex, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
 		float currentDistance = pointInfo.distance;
 		float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
 
 		int predecessor = suitablePredecessor(domainTex, neighInfo.predecessor, neighIndex, cols);
 
-		bool similarEnough = abs(currentDistance - tentativeDistance) < (sqrtf(2) - 1) * 0.0001;
+	//	bool similarEnough = abs(currentDistance - tentativeDistance) < (sqrtf(2) - 1) * 0.0001;
 
 		float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
 		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
 
-		if ((similarEnough && distToPotentialPred < distToPredecessor)
-			|| (!similarEnough && tentativeDistance < currentDistance)){
+		if (/*(similarEnough && distToPotentialPred < distToPredecessor)
+			||*/ (/*!similarEnough &&*/ tentativeDistance < currentDistance)) {
 			
 			int predX, predY;
 			indexToCoords(predecessor, predX, predY, cols);
@@ -103,7 +103,7 @@ __device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* covera
 
 			expanded = true;
 		}
-	}
+//	}
 
 	return expanded;
 }
@@ -180,17 +180,8 @@ __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int
 
 		if (exactDistance != -1 && exactDistance < pointInfo.distance) {
 			coverageMap[tid].distance = exactDistance;
-			bool test;
 
-			for (int i = 0; i < 2; i++) {
-				for (int j = 0; j < 2; j++) {
-					int index = coordsToIndex(tidX + i, tidY + j, cols);
-					if (coverageMap[index].predecessor == -1)
-						test = true;
-				}
-			}
-
-			*globalChanges = test;
+			*globalChanges = true;
 		}
 	}
 }

@@ -1,13 +1,63 @@
 #pragma once
 
-//#ifndef GENETIC_ALGORITHM_H
-//#define GENETIC_ALGORITHM_H
+#include <vector>
+#include <cuda_runtime.h>
+#include <random>
+#include <algorithm>
+#include "Common.h"
+#include "FeedbackExpansion.h"
 
-//#include "Common.h"
+struct Individual {
+	std::vector<int> genes;
+	float fitness;
 
-//int interiorPoints;
-//void setup();
+	Individual() : fitness(0.0) {}
+	Individual(std::vector<int> g) : fitness(0.0), genes(g) {};
+};
 
-//float* evaluateIndividual(const std::vector<int>& genes);
+class MCLPSolver {
+public:
+	// Assumes that coverageMap is a pointer towards GPU memory.
+	MCLPSolver(int* domain, MapElement* coverageMap, int numServices, int rows, int cols, float radius, OptimizationParameters settings);
 
-//#endif
+	Individual solve();
+private:
+
+	void generateInitialPopulation();
+	void initializeTexture();
+	void reinitializeCoverageMap(std::vector<int> genes);
+	float evaluateFitness(std::vector<int> genes);
+
+	void evaluatePopulation();
+	
+	std::vector<Individual> selection(int numIndividuals);
+	std::vector<Individual> tournamentBasedSelection(int numIndividuals);
+//	Individual tournamentSelection();
+//	Individual rouletteWheelSelection();
+	Individual crossover(const Individual& parent1, const Individual& parent2);
+
+
+	void mutate(Individual& individual);
+
+	void sortPopulation();
+	
+	void freeResources();
+
+	int* _domain;
+	cudaArray* _domainArray;
+	cudaTextureObject_t _domainTexture;
+	MapElement* _coverageMap;
+	std::vector<Individual> _population;
+	
+	int _numServices;
+	int _rows;
+	int _cols;
+	float _radius;
+
+	int _numGenerations;
+	int _populationSize;
+	float _mutationRate;
+
+	float _stopThreshold;
+};
+

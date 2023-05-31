@@ -4,14 +4,15 @@
 #include <cuda_runtime.h>
 #include <random>
 #include <algorithm>
-#include "Common.h"
-#include "FeedbackExpansion.h"
+#include "Coverage.h"
+#include "FeedbackExpansionK.cuh"
 
 struct Individual {
 	std::vector<int> genes;
 	float fitness;
 
 	Individual() : fitness(0.0) {}
+
 	Individual(std::vector<int> g) : fitness(0.0), genes(g) {};
 };
 
@@ -22,20 +23,17 @@ public:
 
 	Individual solve();
 private:
-
 	void generateInitialPopulation();
-	void initializeTexture();
-	void reinitializeCoverageMap(std::vector<int> genes);
+
 	float evaluateFitness(std::vector<int> genes);
 
-	void evaluatePopulation();
+	void updatePopulationFitness();
 	
 	std::vector<Individual> selection(int numIndividuals);
-	std::vector<Individual> tournamentBasedSelection(int numIndividuals);
-//	Individual tournamentSelection();
-//	Individual rouletteWheelSelection();
-	Individual crossover(const Individual& parent1, const Individual& parent2);
 
+	std::vector<Individual> tournamentBasedSelection(int numIndividuals);
+
+	Individual crossover(const Individual& parent1, const Individual& parent2);
 
 	void mutate(Individual& individual);
 

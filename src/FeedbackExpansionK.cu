@@ -94,7 +94,7 @@ __device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* covera
 			indexToCoords(pointIndex, currentX, currentY, cols);
 
 			if (!visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY)) {
-				return false;
+				predecessor = neighIndex;
 			}
 
 			MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
@@ -186,7 +186,7 @@ __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int
 	}
 }
 
-__global__ void initCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols) {
+__global__ void initializeCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols) {
 	int tid = getThreadId();
 	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
 

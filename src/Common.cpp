@@ -1,82 +1,5 @@
 #include "Common.h"
 
-bool* IO::extractImageBoundary(const std::string filePath, int& rows, int& cols) {
-	// Read the image file into a matrix.
-	cv::Mat image = readImage(filePath, cv::IMREAD_GRAYSCALE);
-
-	// Store some properties of the image in variables.
-	rows = image.rows;
-	cols = image.cols;
-	const int numElements = rows * cols;
-
-	// Convert the matrix to a flat array of floats.
-	float* hostDomain = convertCV2Float(image);
-
-	// Allocate memory on the GPU for the raw and normalized domains.
-	bool* deviceBoundary;
-	CUDA::allocate(deviceBoundary, numElements);
-
-	float* deviceDomain;
-	CUDA::allocateAndCopy(deviceDomain, hostDomain, numElements);
-
-	// Set up the dimensions for the GPU kernel.
-	dim3 threadsPerBlock(16, 16);
-	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-	// Call the GPU kernel to normalize the domain.
-	extractBoundary << <blocksPerGrid, threadsPerBlock >> > (deviceDomain, deviceBoundary, numElements);
-
-	// Wait for the GPU kernel to finish.
-	CUDA::sync();
-
-	bool* result = new bool[numElements];
-	//	GPU::copyDeviceToHost(result, normalizedDomain, pixels);
-	CUDA::copyDeviceToHost(result, deviceBoundary, numElements);
-
-	// Free memory on the GPU.
-	CUDA::free(deviceDomain);
-	CUDA::free(deviceBoundary);
-
-	// Return the result array.
-	return result;
-}
-
-int* IO::preProcessDomainImage(const std::string filePath, int& rows, int& cols) {
-	// Read the image file into a matrix.
-	cv::Mat image = readImage(filePath, cv::IMREAD_GRAYSCALE);
-
-	// Store some properties of the image in variables.
-	rows = image.rows;
-	cols = image.cols;
-	int numElements = rows * cols;
-
-	// Convert the matrix to a flat array of floats.
-	float* hostImage = convertCV2Float(image);
-
-	int* deviceDomain;
-	CUDA::allocate(deviceDomain, numElements);
-
-	float* deviceImage;
-	CUDA::allocateAndCopy(deviceImage, hostImage, numElements);
-
-	// Set up the dimensions for the GPU kernel.
-	dim3 threadsPerBlock(16, 16);
-	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
-
-	processImageAsDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
-	CUDA::sync();
-
-	int* hostDomain = new int[numElements];
-	CUDA::copyDeviceToHost(hostDomain, deviceDomain, numElements);
-
-	CUDA::free(deviceDomain);
-	CUDA::free(deviceImage);
-
-	delete[] hostImage;
-
-	return hostDomain;
-}
-
 cv::Mat IO::readImage(const std::string path, cv::ImreadModes mode) {
 	// Load image in grayscale mode
 	cv::Mat img = cv::imread(path, mode);
@@ -214,6 +137,25 @@ std::vector<int> UTILS::convertString2IntVector(const std::string& str){
 	return result;
 }
 
+std::string UTILS::convertIntVector2String(const std::vector<int>& vec) {
+	std::string result = "{ ";
+
+	for (size_t i = 0; i < vec.size(); ++i) {
+		if (i % 2 == 0) {
+			result += "(" + std::to_string(vec[i]) + ",";
+		}
+		else {
+			result += std::to_string(vec[i]) + ")";
+			if (i != vec.size() - 1) {
+				result += ", ";
+			}
+		}
+	}
+	result += " }";
+	return result;
+
+}
+
 std::vector<int> UTILS::generateRandomDistribution(const int* boundary, int rows, int cols, int N) {
 	std::vector<int> sources;
 	sources.reserve(2 * N); // Reserve space for efficiency
@@ -292,16 +234,4 @@ void UTILS::freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray*
 	delete[] domain;
 }
 
-cudaTextureObject_t UTILS::convertDomain2Texture(const int* hostDomain, int rows, int cols, cudaArray** domainArray) {
-	// Create channel format descriptor for integer type
-	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<int>(); 
-
-	// Allocate memory for the device array
-	CUDA::allocateArray(*domainArray, channelDesc, cols, rows); 
-
-	// Copy host domain to device array
-	CUDA::copyToArray(*domainArray, hostDomain, rows * cols); 
-
-	return CUDA::createTextureObject(*domainArray);
-}
 

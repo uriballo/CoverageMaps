@@ -1,6 +1,7 @@
 #include "EuclideanExpansion.h"
 
-void runEuclideanExpansion(configuration config) {
+void runEuclideanExpansion(SystemParameters config) {
+	/*
 	int rows, cols;
 
 	bool* boundary = IO::extractImageBoundary(config.imagePath, rows, cols);
@@ -32,6 +33,7 @@ void runEuclideanExpansion(configuration config) {
 
 	delete[] coverageMap;
 	delete[] boundary;
+	*/
 }
 
 float* computeCoverageMap(const bool* boundary, const std::vector<int>& sourceDistribution, float radius, int rows, int cols, int numSources) {

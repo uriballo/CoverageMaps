@@ -182,6 +182,75 @@ __device__ __inline__ void pickColor(int sourceIndex, int* sourceDistribution, i
 	}
 }
 
+__device__ __inline__ void pickColor2(int sourceIndex, int* sourceDistribution, int numSources, float& R, float& G, float& B, int cols) {
+	int id;
+	int j = -1;
+	for (int i = 0; i < numSources * 2; i += 2) {
+		j++;
+
+		id = coordsToIndex(sourceDistribution[i], sourceDistribution[i + 1], cols);
+
+		if (id == sourceIndex)
+			break;
+	}
+
+	int normalizedId = j % 10;
+	switch (normalizedId) {
+	case 0:
+		R = 108;
+		G = 61;
+		B = 62;
+		break;
+	case 1:
+		R = 131;
+		G = 93;
+		B = 86;
+		break;
+	case 2:
+		R = 154;
+		G = 125;
+		B = 110;
+		break;
+	case 3:
+		R = 176;
+		G = 160;
+		B = 136;
+		break;
+	case 4:
+		R = 198;
+		G = 195;
+		B = 163;
+		break;
+	case 5:
+		R = 85;
+		G = 196;
+		B = 49;
+		break;
+	case 6:
+		R = 225;
+		G = 234;
+		B = 49;
+		break;
+	case 7:
+		R = 128;
+		G = 229;
+		B = 205;
+		break;
+	case 8:
+		R = 183;
+		G = 141;
+		B = 23;
+		break;
+	case 9:
+		R = 219;
+		G = 198;
+		B = 139;
+		break;
+	}
+
+
+}
+
 __global__ __inline__ void processResultsRGB_(const int* boundary,  const MapElement* distanceMap, int* sourceDistribution, int numSources, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
@@ -208,13 +277,10 @@ __global__ __inline__ void processResultsRGB_(const int* boundary,  const MapEle
 					B = 0;
 				}
 				else {	
-					float tint = (1.0 - pixelValue / radius);
+					float tint = (1.0- pixelValue / radius);
 					
-					pickColor(distanceMap[tid].source, sourceDistribution, numSources, R, G, B, cols);
+					pickColor2(distanceMap[tid].source, sourceDistribution, numSources, R, G, B, cols);
 
-				//	R = 149.0f;
-				//	G = 152.0f;
-				//	B = 144.0f;
 
 					R = R + (255.0f - R) * tint;
 					G = G + (255.0f - G) * tint;

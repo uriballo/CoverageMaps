@@ -20,7 +20,7 @@ __device__ int suitablePredecessor(cudaTextureObject_t domainTex, int predecesso
 
 __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius);
 
-__global__ void initCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols);
+__global__ void initializeCoverageMap(MapElement* coverageMap, float initRadius, int initPredecessor, int* servicesDistribution, int numServices, int numElements, int cols);
 
 __global__ void evalCoverage(cudaTextureObject_t domainTex, MapElement* coverageMap, int rows, int cols, int* interiorPoints, int* coveredPoints);
 

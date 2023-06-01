@@ -21,7 +21,7 @@ __global__ void euclideanExpansion(cudaTextureObject_t domainTex, MapElement* co
 
 		int cellValue = tex2D<int>(domainTex, tidX, tidY);
 		if (tidX < cols && tidY < rows && cellValue > -1) {
-			bool updated =  listenUpdates(domainTex, coverageMap, tidX, tidY, rows, cols, radius);
+			bool updated =  scanWindow(domainTex, coverageMap, tid, rows, cols, radius);
 
 			if (updated)
 				blockChanges = true;
@@ -33,23 +33,20 @@ __global__ void euclideanExpansion(cudaTextureObject_t domainTex, MapElement* co
 			*globalChanges = true;
 
 	} while (blockChanges);
-	
 }
 
-__device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverageMap, int tidX, int tidY, int rows, int cols, float radius) {
-	bool updates = false;
+__device__ bool scanWindow(cudaTextureObject_t domainTex, MapElement* coverageMap, int pointIndex, int rows, int cols, float radius) {
+	int ix = 0, iy = 0;
+	indexToCoords(pointIndex, ix, iy, cols);
 
-	int pointIndex = coordsToIndex(tidX, tidY, cols);
+	bool updates = false;
 
 	MapElement pointInfo = coverageMap[pointIndex];
 
-	// TODO: problema concu
-	MapElement predPredInfo = coverageMap[pointInfo.predecessor];
-
 	for (int dx = -1; dx < 2; dx++) {
 		for (int dy = -1; dy < 2; dy++) {
-			int nx = tidX + dx;
-			int ny = tidY + dy;
+			int nx = ix + dx;
+			int ny = iy + dy;
 
 			bool inBounds = nx < cols && ny < rows && nx >= 0 && ny >= 0;
 
@@ -58,7 +55,7 @@ __device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverag
 			if (inBounds && neighIndex != pointIndex && coverageMap[neighIndex].predecessor != -1) {
 				int cellValue = tex2D<int>(domainTex, nx, ny);
 				if (cellValue > -1) {
-					updates = updates || checkNeighInfo(domainTex, coverageMap, pointInfo, coverageMap[neighIndex], predPredInfo, pointIndex, neighIndex, rows, cols, radius);
+					updates = updates || checkNeighInfo(domainTex, pointInfo, coverageMap[neighIndex], pointIndex, neighIndex, rows, cols, radius);
 				}
 			}
 		}
@@ -70,40 +67,22 @@ __device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverag
 	return updates;
 }
 
-__device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
+__device__ bool checkNeighInfo(cudaTextureObject_t domainTex,  MapElement& pointInfo, MapElement neighInfo, int pointIndex, int neighIndex, int rows, int cols, float radius) {
 	bool expanded = false;
 
-//	if (canUpdateInfo(domainTex, coverageMap, pointIndex, neighIndex, pointInfo.predecessor, predPredInfo.predecessor, rows, cols)) {
-		float currentDistance = pointInfo.distance;
-		float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
+	float currentDistance = pointInfo.distance;
+	float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
 
-		int predecessor = suitablePredecessor(domainTex, neighInfo.predecessor, neighIndex, cols);
 
-	//	bool similarEnough = abs(currentDistance - tentativeDistance) < (sqrtf(2) - 1) * 0.0001;
+	if (tentativeDistance < currentDistance) {
+		int predecessor = suitablePredecessor(domainTex, pointIndex, neighIndex, neighInfo.predecessor, rows, cols);
 
-		float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
-		float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
+		MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
 
-		if (/*(similarEnough && distToPotentialPred < distToPredecessor)
-			||*/ (/*!similarEnough &&*/ tentativeDistance < currentDistance)) {
-			
-			int predX, predY;
-			indexToCoords(predecessor, predX, predY, cols);
+		pointInfo = newInfo;
 
-			int currentX, currentY;
-			indexToCoords(pointIndex, currentX, currentY, cols);
-
-			if (!visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY)) {
-				predecessor = neighIndex;
-			}
-
-			MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
-
-			pointInfo = newInfo;
-
-			expanded = true;
-		}
-//	}
+		expanded = true;
+	}
 
 	return expanded;
 }
@@ -151,28 +130,33 @@ __device__ bool canUpdateInfo(cudaTextureObject_t domainTex, MapElement* coverag
 	return canUpdate;
 }
 
-__device__ int suitablePredecessor(cudaTextureObject_t domainTex, int predecessorIndex, int neighIndex, int cols) {
+__device__ int suitablePredecessor(cudaTextureObject_t domainTex, int pointIndex, int neighIndex, int neighPredecessorIndex, int rows, int cols) {
 	int neighX, neighY;
 	indexToCoords(neighIndex, neighX, neighY, cols);
 
-	int cellValue = tex2D<int>(domainTex, neighX, neighY);
+	int predX, predY;
+	indexToCoords(neighPredecessorIndex, predX, predY, cols);
 
-	if (cellValue == 0)
-		return predecessorIndex;
-	else
+	int currentX, currentY;
+	indexToCoords(pointIndex, currentX, currentY, cols);
+
+	bool neighIsCorner = tex2D<int>(domainTex, neighX, neighY);
+	bool neighPredIsVisible = visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY);
+
+	if (neighIsCorner || !neighPredIsVisible)
 		return neighIndex;
+	else
+		return neighPredecessorIndex;
 }
 
 __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius) {
-	// Get the ID of the thread
-
 	int tidX, tidY;
 	get2DThreadId(tidX, tidY);
-	int tid = coordsToIndex(tidX, tidY, cols);
 
 	if (tidX >= cols || tidY >= rows)
 		return;
 
+	int tid = coordsToIndex(tidX, tidY, cols);
 	MapElement pointInfo = coverageMap[tid];
 
 	if (pointInfo.distance > 0 && pointInfo.distance < (radius + FLT_MIN) ) {

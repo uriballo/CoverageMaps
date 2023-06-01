@@ -1,5 +1,4 @@
 #include "FeedbackExpansion.h"
-#include "MCLPSolver.h"
 
 std::vector<int> getServiceDistribution(const SystemParameters& config, const int* domain, Individual best, int numServices, int rows, int cols) {
 	if (config.customDistribution) {
@@ -13,7 +12,7 @@ std::vector<int> getServiceDistribution(const SystemParameters& config, const in
 	}
 }
 
-double computeCoverageMap(SystemParameters& config, cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols, float radius) {
+double parallelBellmanFord2(SystemParameters& config, cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols, float radius) {
 	auto startTime = std::chrono::steady_clock::now();
 
 	bool hostFlag = false;
@@ -118,10 +117,12 @@ void runExactExpansion(SystemParameters& config, const AlgorithmParameters& algP
 	cudaArray* domainArray;
 	cudaTextureObject_t domainTexture = COVERAGE::convertDomainToTexture(domain, &domainArray, rows, cols);
 
-	seconds = computeCoverageMap(config, domainTexture, deviceCoverageMap, rows, cols, algParams.serviceRadius);
+	seconds = parallelBellmanFord2(config, domainTexture, deviceCoverageMap, rows, cols, algParams.serviceRadius);
+	
+	float coverage = config.maxCoverage ? best.fitness : COVERAGE::getCoveragePercent(domainTexture, deviceCoverageMap, rows, cols);
 
 	config.solutionData += "Coverage map compute time: " + std::to_string(seconds) + " (s)\n";
-	config.solutionData += "Coverage percent: " + std::to_string(best.fitness) + " %\n";
+	config.solutionData += "Coverage percent: " + std::to_string(coverage) + " %\n";
 	config.solutionData += "Services distribution: " + UTILS::convertIntVector2String(servicesDistribution) + " \n";
 
 

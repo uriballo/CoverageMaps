@@ -96,38 +96,7 @@ void MCLPSolver::updatePopulationFitness(){
 	}
 }
 
-std::vector<Individual> MCLPSolver::selection(int numIndividuals) {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dis(0.0, 1.0);
-
-	std::vector<Individual> selectedIndividuals;
-	selectedIndividuals.reserve(numIndividuals);
-
-	// Calculate total fitness of the population
-	double totalFitness = 0.0;
-	for (const auto& individual : _population) {
-		totalFitness += individual.fitness;
-	}
-
-	// Spin the roulette wheel and select individuals
-	for (int i = 0; i < numIndividuals; ++i) {
-		double spin = dis(gen) * totalFitness;
-		double currentFitness = 0.0;
-
-		for (const auto& individual : _population) {
-			currentFitness += individual.fitness;
-			if (currentFitness >= spin) {
-				selectedIndividuals.push_back(individual);
-				break;
-			}
-		}
-	}
-
-	return selectedIndividuals;
-}
-
-std::vector<Individual> MCLPSolver::tournamentBasedSelection(int numIndividuals)
+std::vector<Individual> MCLPSolver::selection(int numIndividuals)
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());

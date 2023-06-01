@@ -2,6 +2,8 @@
 
 #include "Common.h"
 #include "FeedbackExpansionK.cuh"
+#include "EuclideanExpansionK.cuh"
+#include "MCLPSolver.h"
 
 namespace COVERAGE {
 	// INPUTS

@@ -97,22 +97,38 @@ __device__ __inline__ bool checkIfCorner(const float* grayscaleImage, const int 
 	return diagWallHits == 1 && wallHits > 1;
 }
 
-__global__ __inline__ void processImageAsDomain(const float* grayscaleImage, int* domain, int rows, int cols) {
-	int threadId = getThreadId(); // Get the thread ID
-
+/**
+ * @brief Performs cell decomposition based on a grayscale image.
+ *
+ * Cells with pixel intensity <= 50.0 are considered occupied and assigned a domain value of -1.
+ * Cells that are determined to be corners are assigned a domain value of 1.
+ * All other cells are considered free points are assigned a domain value of 0.
+ *
+ * @param grayscaleImage A pointer to the grayscale image data.
+ * @param domain A pointer to the domain array where the results will be stored.
+ * @param rows The number of rows in the image.
+ * @param cols The number of columns in the image.
+ */
+__global__ __inline__ void imageCellDecomposition(const float* grayscaleImage, int* domain, int rows, int cols) {
+	int threadId = getThreadId();
 	int numElements = rows * cols;
 
 	if (threadId < numElements) {
-		float pixelIntensity = grayscaleImage[threadId]; // Get the intensity of the pixel 
+		// Get the intensity of the pixel.
+		float pixelIntensity = grayscaleImage[threadId];
 
-		if (pixelIntensity <= 50.0f) // Check if the pixel intensity is less than or equal to 127.5 (Wall)
-			domain[threadId] = -1; // Assign -1 to the domain to represent a wall
-		else if (checkIfCorner(grayscaleImage, threadId, rows, cols)) 
-			domain[threadId] = 1; // Assign 1 to the domain to represent an interior point corner
+		if (pixelIntensity <= 50.0f)
+			// Assign -1 to the domain to represent a wall or obstacle.
+			domain[threadId] = -1;
+		else if (checkIfCorner(grayscaleImage, threadId, rows, cols))
+			// Assign 1 to the domain to represent a free corner.
+			domain[threadId] = 1;
 		else
-			domain[threadId] = 0; // Assign 0 to the domain to represent an interior point free
+			// Assign 0 to the domain to represent a free point.
+			domain[threadId] = 0;
 	}
 }
+
 
 __device__ __inline__ void pickColor(int sourceIndex, int* sourceDistribution, int numSources, float& R, float& G, float& B, int cols) {
 	int id;
@@ -130,24 +146,24 @@ __device__ __inline__ void pickColor(int sourceIndex, int* sourceDistribution, i
 
 	switch (normalizedId) {
 		case 0:
-			R = 254;
-			G = 187;
-			B = 187;
+			R = 26;
+			G = 64;
+			B = 121;
 			break;
 		case 01:
-			R = 252;
-			G = 213;
-			B = 206;
+			R = 203;
+			G = 223;
+			B = 144;
 			break;
 		case 2:
-			R = 250;
-			G = 225;
-			B = 221;
+			R = 143;
+			G = 173;
+			B = 136;
 			break;
 		case 3:
-			R = 248;
-			G = 237;
-			B = 235;
+			R = 77;
+			G = 124;
+			B = 138;
 			break;
 		case 4:
 			R = 232;
@@ -251,7 +267,7 @@ __device__ __inline__ void pickColor2(int sourceIndex, int* sourceDistribution, 
 
 }
 
-__global__ __inline__ void processResultsRGB_(const int* boundary,  const MapElement* distanceMap, int* sourceDistribution, int numSources, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
+__global__ __inline__ void processResultsRGB_(const int* boundary, const MapElement* distanceMap, int* sourceDistribution, int numSources, float* outputR, float* outputG, float* outputB, const float radius, int numElements, int cols) {
 	// Determine pixel to be processed by thread.
 	int tid = getThreadId();
 
@@ -271,13 +287,13 @@ __global__ __inline__ void processResultsRGB_(const int* boundary,  const MapEle
 			if (pixelValue < (radius + FLT_MIN)) {
 				float R, G, B;
 
-				if (pixelValue < 4) {
+				if (pixelValue < 3) {
 					R = 255;
 					G = 0;
 					B = 0;
 				}
 				else {	
-					float tint = (1.0- pixelValue / radius);
+					float tint =  (1.0 - pixelValue / radius);
 					
 					pickColor2(distanceMap[tid].source, sourceDistribution, numSources, R, G, B, cols);
 

@@ -1,24 +1,29 @@
 #include "EuclideanExpansionK.cuh"
 #include <iostream>
 
-__global__ void euclideanExpansionKernel(const bool* boundary, float* distances, bool* globalChanges, int rows, int cols) {
-	// Get the ID of the thread
-	int tid = getThreadId();
+__global__ void pseudoEuclideanExpansion(cudaTextureObject_t domainTex, MapElement* coverageMap, bool* globalChanges, int rows, int cols) {
+	int tidX, tidY;
+	get2DThreadId(tidX, tidY);
 
+	int index = coordsToIndex(tidX, tidY, cols);
 	bool responsible = threadIdx.x == 0 && threadIdx.y == 0;
-
-	int dims = rows * cols;
 
 	__shared__ bool blockChanges;
 
 	do {
-		// Set the value of blockIsActive to false at the start of each iteration
 		if (responsible)
+			// Set the value of blockChanges to false at the start of each iteration.
 			blockChanges = false;
 
 		__syncthreads();
-		if (tid < dims && !boundary[tid]) {
-			if (scanWindow(boundary, distances, tid, rows, cols))
+
+		int tid = coordsToIndex(tidX, tidY, cols);
+
+		int cellValue = tex2D<int>(domainTex, tidX, tidY);
+		if (tidX < cols && tidY < rows && cellValue > -1) {
+			bool updated = scanWindow(domainTex, coverageMap, tid, rows, cols);
+
+			if (updated)
 				blockChanges = true;
 		}
 
@@ -30,15 +35,13 @@ __global__ void euclideanExpansionKernel(const bool* boundary, float* distances,
 	} while (blockChanges);
 }
 
-__device__ bool scanWindow(const bool* boundary, float* distances, const int pixelIndex, int rows, int cols) {
-	// Convert the index of the current pixel to its x and y coordinates
+__device__ bool scanWindow(cudaTextureObject_t domainTex, MapElement* coverageMap, const int pixelIndex, int rows, int cols) {
 	int ix = 0, iy = 0;
 	indexToCoords(pixelIndex, ix, iy, cols);
 
-	// Declare a boolean variable to keep track of whether this pixel was updated
 	bool updated = false;
 
-	// Loop through all the neighboring pixels
+	// Loop through all the neighboring pixels.
 	for (int i = -1; i < 2; i++) {
 		for (int j = -1; j < 2; j++) {
 			int newX = ix + i;
@@ -49,17 +52,17 @@ __device__ bool scanWindow(const bool* boundary, float* distances, const int pix
 			bool inBounds = xInBounds && yInBounds;
 
 			if (inBounds) {
-				// Compute the neighbour index
 				int neighIndex = coordsToIndex(newX, newY, cols);
 
-				// Check if its a wall
-				bool isWall = boundary[neighIndex];
+				// Check if it's a wall.
+				int cellValue = tex2D<int>(domainTex, newX, newY);
+				bool isWall = cellValue == -1;
 
 				if (!isWall && pixelIndex != neighIndex) {
-					// Determine whether the neighboring pixel is diagonal or not
+					// Determine whether the neighboring pixel is diagonal.
 					bool diag = abs(i) == abs(j);
 
-					updated = updated || updateDistances(distances, pixelIndex, neighIndex, diag);
+					updated = updated || checkNeighInfo(coverageMap, pixelIndex, neighIndex, diag);
 				}
 			}
 		}
@@ -67,18 +70,19 @@ __device__ bool scanWindow(const bool* boundary, float* distances, const int pix
 	return updated;
 }
 
-__device__ bool updateDistances(float* distances, int pointIndex, int neighIndex, bool diag) {
-	// Compute the distance between the current point and the neighboring point
+__device__ bool checkNeighInfo(MapElement* coverageMap, int pointIndex, int neighIndex, bool diag) {
+	// Compute the distance between the current point and the neighboring point.
 	float distanceBetween = diag ? diagStepDistance() : unitStepDistance();
 	bool updated = false;
 
-	float currentDistance = distances[pointIndex]; // by default radius + FLT_MIN
-	float tentativeDistance = distances[neighIndex] + distanceBetween;
+	float currentDistance = coverageMap[pointIndex].distance;
+	float tentativeDistance = coverageMap[neighIndex].distance + distanceBetween;
 
-	// If the tentative distance is shorter than the current distance and within the radius of the source,
-	// update the current point with the tentative distance 
 	if (tentativeDistance < currentDistance) {
-		distances[pointIndex] = tentativeDistance;
+		coverageMap[pointIndex].distance = tentativeDistance;
+
+		if (coverageMap[neighIndex].predecessor != -1)
+			coverageMap[pointIndex].predecessor = coverageMap[neighIndex].predecessor;
 		updated = true;
 	}
 

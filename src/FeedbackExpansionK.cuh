@@ -10,13 +10,13 @@
 
 __global__ void euclideanExpansion(cudaTextureObject_t domainTex, MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius);
 
-__device__ bool listenUpdates(cudaTextureObject_t domainTex, MapElement* coverageMap, int tidX, int tidY, int rows, int cols, float radius);
+__device__ bool scanWindow(cudaTextureObject_t domainTex, MapElement* coverageMap, int pointIndex, int rows, int cols, float radius);
 
-__device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, MapElement& pointInfo, MapElement neighInfo, MapElement predPredInfo, int pointIndex, int neighIndex, int rows, int cols, float radius);
+__device__ bool checkNeighInfo(cudaTextureObject_t domainTex, MapElement& pointInfo, MapElement neighInfo, int pointIndex, int neighIndex, int rows, int cols, float radius);
 
 __device__ bool canUpdateInfo(cudaTextureObject_t domainTex, MapElement* coverageMap, int point, int neigh, int firstPredecessor, int secondPredecessor, int rows, int cols);
 
-__device__ int suitablePredecessor(cudaTextureObject_t domainTex, int predecessorIndex,int neighIndex, int cols);
+__device__ int suitablePredecessor(cudaTextureObject_t domainTex, int pointIndex,int neighIndex, int neighPredecessorIndex, int rows, int cols);
 
 __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int cols, float radius);
 

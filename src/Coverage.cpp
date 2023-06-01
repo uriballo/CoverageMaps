@@ -22,7 +22,7 @@ int* COVERAGE::getDomainFromImage(std::string filePath, int& rows, int& cols){
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	processImageAsDomain << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
+	imageCellDecomposition << <blocksPerGrid, threadsPerBlock >> > (deviceImage, deviceDomain, rows, cols);
 	CUDA::sync();
 
 	int* hostDomain = new int[numElements];

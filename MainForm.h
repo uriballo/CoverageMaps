@@ -262,7 +262,6 @@ namespace CUDACoverageMaps {
 			this->numberOfServicesNum->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
 			this->numberOfServicesNum->Location = System::Drawing::Point(67, 175);
-			this->numberOfServicesNum->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 20, 0, 0, 0 });
 			this->numberOfServicesNum->Name = L"numberOfServicesNum";
 			this->numberOfServicesNum->Size = System::Drawing::Size(101, 34);
 			this->numberOfServicesNum->TabIndex = 0;
@@ -285,7 +284,7 @@ namespace CUDACoverageMaps {
 				static_cast<System::Byte>(0)));
 			this->serviceRadiusNum->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
 			this->serviceRadiusNum->Location = System::Drawing::Point(275, 175);
-			this->serviceRadiusNum->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
+			this->serviceRadiusNum->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10000, 0, 0, 0 });
 			this->serviceRadiusNum->Name = L"serviceRadiusNum";
 			this->serviceRadiusNum->Size = System::Drawing::Size(101, 34);
 			this->serviceRadiusNum->TabIndex = 3;
@@ -627,7 +626,7 @@ namespace CUDACoverageMaps {
 		if (algParams.useExactExpansion)
 			runExactExpansion(config, algParams, optParams);
 		else
-			runEuclideanExpansion(config);
+			runEuclideanExpansion(config, algParams, optParams);
 
 		solutionDataRTB->Text = marshal_as<String^>(config.solutionData);
 

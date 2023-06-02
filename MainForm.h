@@ -306,9 +306,9 @@ namespace CUDACoverageMaps {
 			this->customDistributionCB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
 			this->customDistributionCB->Location = System::Drawing::Point(67, 224);
 			this->customDistributionCB->Name = L"customDistributionCB";
-			this->customDistributionCB->Size = System::Drawing::Size(228, 34);
+			this->customDistributionCB->Size = System::Drawing::Size(230, 34);
 			this->customDistributionCB->TabIndex = 8;
-			this->customDistributionCB->Text = L"Custom distribution";
+			this->customDistributionCB->Text = L"Custom Distribution";
 			this->customDistributionCB->UseVisualStyleBackColor = true;
 			this->customDistributionCB->CheckedChanged += gcnew System::EventHandler(this, &MainForm::customDistributionCB_CheckedChanged);
 			// 
@@ -332,7 +332,7 @@ namespace CUDACoverageMaps {
 			this->storeBoundary->Name = L"storeBoundary";
 			this->storeBoundary->Size = System::Drawing::Size(189, 34);
 			this->storeBoundary->TabIndex = 12;
-			this->storeBoundary->Text = L"Store boundary";
+			this->storeBoundary->Text = L"Store Boundary";
 			this->storeBoundary->UseVisualStyleBackColor = true;
 			// 
 			// storeIterations
@@ -341,9 +341,9 @@ namespace CUDACoverageMaps {
 			this->storeIterations->Font = (gcnew System::Drawing::Font(L"Segoe UI", 11));
 			this->storeIterations->Location = System::Drawing::Point(311, 304);
 			this->storeIterations->Name = L"storeIterations";
-			this->storeIterations->Size = System::Drawing::Size(311, 34);
+			this->storeIterations->Size = System::Drawing::Size(316, 34);
 			this->storeIterations->TabIndex = 13;
-			this->storeIterations->Text = L"Store coverage per iteration";
+			this->storeIterations->Text = L"Store Coverage per Iteration";
 			this->storeIterations->UseVisualStyleBackColor = true;
 			// 
 			// inputLabel

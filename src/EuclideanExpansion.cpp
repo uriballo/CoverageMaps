@@ -9,7 +9,7 @@ std::vector<int> getServiceDistribution(const SystemParameters& config, const in
 	}
 }
 
-double parallelBellmanFord1(SystemParameters& config, cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols, float radius){
+double parallelBellmanFord1(SystemParameters& config, cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols, float radius) {
 	auto startTime = std::chrono::steady_clock::now();
 
 	bool hostFlag = false;
@@ -99,7 +99,4 @@ void runEuclideanExpansion(SystemParameters& config, const AlgorithmParameters& 
 
 	UTILS::freeExpansionResources(domainTexture, domainArray, deviceCoverageMap, domain);
 }
-
-
-
 

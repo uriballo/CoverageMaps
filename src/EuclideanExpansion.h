@@ -2,7 +2,7 @@
 
 #include "Coverage.h"
 
-/**
+/*
  * @brief Runs a parallel version of the Bellman-Ford algorithm.
  *
  * This function implements the parallel Bellman-Ford algorithm via pseudo-Euclidean expansion.
@@ -17,4 +17,11 @@
  */
 double parallelBellmanFord1(SystemParameters& config, cudaTextureObject_t domainTexture, MapElement* deviceCoverageMap, int rows, int cols, float radius);
 
+
+/*
+  * @brief Runs the Euclidean expansion algorithm.
+  * @param config The system parameters.
+  * @param algParams The algorithm parameters.
+  * @param optParams The optimization parameters.
+*/
 void runEuclideanExpansion(SystemParameters& config, const AlgorithmParameters& algParams, const OptimizationParameters& optParams);

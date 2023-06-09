@@ -71,7 +71,7 @@ void IO::writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, 
 	outFile.close();
 }
 
-void IO::writeCoverageMap(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension){
+void IO::writeCoverageMap(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path, std::string extension) {
 	std::ofstream outFileD;
 	std::ofstream outFileS;
 	outFileD.open(path + fileName + "_Distances" + extension);
@@ -112,7 +112,7 @@ cv::Mat IO::createRGBImage(float* outputR, float* outputG, float* outputB, int n
 	return outputImage;
 }
 
-void IO::writeRGBImage(const cv::Mat& imageRGB, std::string filePath){
+void IO::writeRGBImage(const cv::Mat& imageRGB, std::string filePath) {
 	// Convert the floating-point image to 8-bit integer
 	cv::Mat image8Bit;
 	cv::cvtColor(imageRGB, image8Bit, cv::COLOR_RGB2BGR);
@@ -125,7 +125,7 @@ void IO::writeRGBImage(const cv::Mat& imageRGB, std::string filePath){
 	cv::imwrite(filePath, image8Bit, compression_params);
 }
 
-std::vector<int> UTILS::convertString2IntVector(const std::string& str){
+std::vector<int> UTILS::convertString2IntVector(const std::string& str) {
 	std::vector<int> result;
 	std::istringstream iss(str);
 	std::string token;
@@ -184,7 +184,7 @@ std::vector<int> UTILS::generateRandomDistribution(const int* boundary, int rows
 
 cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverageMap, const int* sourceDistribution, int numSources, const float radius, int rows, int cols) {
 	int numElements = rows * cols;
-	
+
 	int* deviceBoundary;
 	CUDA::allocateAndCopy(deviceBoundary, boundary, numElements);
 
@@ -195,7 +195,7 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 	CUDA::allocateAndCopy(deviceSourceDistribution, sourceDistribution, numSources * 2);
 
 	float* outputR;
-	float* outputG; 
+	float* outputG;
 	float* outputB;
 	CUDA::allocate(outputR, numElements);
 	CUDA::allocate(outputG, numElements);
@@ -227,7 +227,7 @@ cv::Mat UTILS::processResultsRGB(const int* boundary, const MapElement* coverage
 	return colorMap;
 }
 
-void UTILS::freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray* domainArray, MapElement* deviceCoverageMap, int* domain){
+void UTILS::freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray* domainArray, MapElement* deviceCoverageMap, int* domain) {
 	cudaDestroyTextureObject(domainTexture);
 	cudaFreeArray(domainArray);
 	CUDA::free(deviceCoverageMap);

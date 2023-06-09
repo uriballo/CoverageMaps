@@ -1,7 +1,5 @@
 #pragma once
 
-//#ifndef COMMON_H
-//#define COMMON_H
 
 #include <string>
 #include <fstream>
@@ -136,37 +134,134 @@ namespace CUDA {
 }
 
 namespace IO {
+	/*
+	  * @brief Reads an image file and returns it as a cv::Mat object.
+	  * @param path The path to the image file.
+	  * @param mode The mode in which the image should be loaded.
+	  * @return The loaded image as a cv::Mat object.
+	*/
 	cv::Mat readImage(const std::string path, cv::ImreadModes mode);
 
+	/*
+	  * @brief Writes a boolean matrix to a file.
+	  * @param mat The boolean matrix.
+	  * @param rows The number of rows in the matrix.
+	  * @param cols The number of columns in the matrix.
+	  * @param fileName The name of the file to write to.
+	  * @param path The path to the directory where the file should be written.
+	  * @param extension The file extension.
+	*/
 	void writeBoolMatrix(bool* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
+	/*
+	  * @brief Writes an integer matrix to a file.
+	  * @param mat The integer matrix.
+	  * @param rows The number of rows in the matrix.
+	  * @param cols The number of columns in the matrix.
+	  * @param fileName The name of the file to write to.
+	  * @param path The path to the directory where the file should be written.
+	  * @param extension The file extension.
+	*/
 	void writeIntMatrix(int* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
+	/*
+	  * @brief Writes a float matrix to a file.
+	  * @param mat The float matrix.
+	  * @param rows The number of rows in the matrix.
+	  * @param cols The number of columns in the matrix.
+	  * @param fileName The name of the file to write to.
+	  * @param path The path to the directory where the file should be written.
+	  * @param extension The file extension.
+	*/
 	void writeFloatMatrix(float* mat, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
 
+	/*
+	  * @brief Writes a float matrix to a file.
+	  * @param mat The float matrix.
+	  * @param rows The number of rows in the matrix.
+	  * @param cols The number of columns in the matrix.
+	  * @param fileName The name of the file to write to.
+	  * @param path The path to the directory where the file should be written.
+	  * @param extension The file extension.
+	*/
 	void writeCoverageMap(const MapElement* distanceMap, int rows, int cols, std::string fileName, std::string path = "output/", std::string extension = ".txt");
+
 
 	void writeRGBImage(const cv::Mat& imageRGB, std::string filePath);
 
+	/*
+	  * @brief Converts a grayscale cv::Mat image to a float array.
+	  * @param image The grayscale image as a cv::Mat object.
+	  * @return The converted float array.
+	*/
 	float* convertCV2Float(const cv::Mat& image);
 
+	/*
+	  * @brief Converts a float array to a grayscale cv::Mat image.
+	  * @param array The float array.
+	  * @param rows The number of rows in the image.
+	  * @param cols The number of columns in the image.
+	  * @return The converted grayscale image as a cv::Mat object.
+	*/
 	cv::Mat convertFloat2CV(const float* array, int rows, int cols);
 
+	/*
+	  * @brief Creates an RGB image from separate arrays of red, green, and blue channels.
+	  * @param outputR The array containing the red channel values.
+	  * @param outputG The array containing the green channel values.
+	  * @param outputB The array containing the blue channel values.
+	  * @param numRows The number of rows in the image.
+	  * @param numCols The number of columns in the image.
+	  * @return The created RGB image as a cv::Mat object.
+	*/
 	cv::Mat createRGBImage(float* outputR, float* outputG, float* outputB, int numRows, int numCols);
 }
 
 namespace UTILS {
+	/*
+	  * @brief Converts a string of comma-separated integers to a vector of integers.
+	  * @param str The input string.
+	  * @return The vector of integers.
+	*/
 	std::vector<int> convertString2IntVector(const std::string& str);
 
+	/*
+	  * @brief Converts a vector of integers to a string representation.
+	  * @param vec The vector of integers.
+	  * @return The string representation of the vector.
+	*/
 	std::string convertIntVector2String(const std::vector<int>& vec);
 
+	/*
+	  * @brief Generates a random distribution of points within a given boundary.
+	  * @param boundary The boundary array.
+	  * @param rows The number of rows in the boundary.
+	  * @param cols The number of columns in the boundary.
+	  * @param N The number of points to generate.
+	  * @return The generated random distribution of points.
+	*/
 	std::vector<int> generateRandomDistribution(const int* boundary, int rows, int cols, int N);
 
+	/*
+	  * @brief Processes the results of coverage mapping and generates an RGB image.
+	  * @param boundary The boundary array.
+	  * @param coverageMap The coverage map array.
+	  * @param sourceDistribution The distribution of source points.
+	  * @param numSources The number of source points.
+	  * @param radius The radius for processing.
+	  * @param rows The number of rows in the coverage map.
+	  * @param cols The number of columns in the coverage map.
+	  * @return The generated RGB image.
+	*/
 	cv::Mat processResultsRGB(const int* boundary, const MapElement* coverageMap, const int* sourceDistribution, int numSources, const float radius, int rows, int cols);
 
+	/*
+	  * @brief Frees the resources used for expansion.
+	  * @param domainTexture The domain texture object.
+	  * @param domainArray The domain array.
+	  * @param deviceCoverageMap The device coverage map.
+	  * @param domain The domain array.
+	*/
 	void freeExpansionResources(cudaTextureObject_t domainTexture, cudaArray* domainArray, MapElement* deviceCoverageMap, int* domain);
 }
-
-//#endif
-
 

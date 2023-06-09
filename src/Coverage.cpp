@@ -1,6 +1,6 @@
 #include "Coverage.h"
 
-int* COVERAGE::getDomainFromImage(std::string filePath, int& rows, int& cols){
+int* COVERAGE::getDomainFromImage(std::string filePath, int& rows, int& cols) {
 	// Read the image file into a matrix.
 	cv::Mat image = IO::readImage(filePath, cv::IMREAD_GRAYSCALE);
 
@@ -36,7 +36,7 @@ int* COVERAGE::getDomainFromImage(std::string filePath, int& rows, int& cols){
 	return hostDomain;
 }
 
-cudaTextureObject_t COVERAGE::convertDomainToTexture(int* domain, cudaArray** domainArray, int rows, int cols){
+cudaTextureObject_t COVERAGE::convertDomainToTexture(int* domain, cudaArray** domainArray, int rows, int cols) {
 	// Create channel format descriptor for integer type
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<int>();
 
@@ -58,9 +58,9 @@ MapElement* COVERAGE::getEmptyCoverageMap(int numElements)
 	return deviceCoverageMap;
 }
 
-void COVERAGE::setupCoverageMap(MapElement* deviceCoverageMap, std::vector<int> servicesDistribution, float radius, int rows, int cols){
+void COVERAGE::setupCoverageMap(MapElement* deviceCoverageMap, std::vector<int> servicesDistribution, float radius, int rows, int cols) {
 	int numElements = rows * cols;
-	int numServices = servicesDistribution.size() /2;
+	int numServices = servicesDistribution.size() / 2;
 
 	int* servicesArray = servicesDistribution.data();
 
@@ -74,7 +74,7 @@ void COVERAGE::setupCoverageMap(MapElement* deviceCoverageMap, std::vector<int> 
 	CUDA::sync();
 }
 
-void COVERAGE::computeExactCoverageMap(cudaTextureObject_t domain, MapElement* emptyCoverageMap, float radius, int rows, int cols){
+void COVERAGE::computeExactCoverageMap(cudaTextureObject_t domain, MapElement* emptyCoverageMap, float radius, int rows, int cols) {
 	bool hostFlag = false;
 	bool* deviceFlag;
 	int numElements = rows * cols;
@@ -102,7 +102,7 @@ void COVERAGE::computeExactCoverageMap(cudaTextureObject_t domain, MapElement* e
 	CUDA::free(deviceFlag);
 }
 
-float COVERAGE::getCoveragePercent(cudaTextureObject_t domain, MapElement* coverageMap, int rows, int cols){
+float COVERAGE::getCoveragePercent(cudaTextureObject_t domain, MapElement* coverageMap, int rows, int cols) {
 	int* deviceInteriorPoints;
 	CUDA::allocateAndSet(deviceInteriorPoints, 1, 0);
 

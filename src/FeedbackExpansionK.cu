@@ -73,9 +73,15 @@ __device__ bool checkNeighInfo(cudaTextureObject_t domainTex,  MapElement& point
 	float currentDistance = pointInfo.distance;
 	float tentativeDistance = neighInfo.distance + indexDistance(pointIndex, neighIndex, cols);
 
+	int predecessor = suitablePredecessor(domainTex, pointIndex, neighIndex, neighInfo.predecessor, rows, cols);
+	
+	bool similarEnough = abs(currentDistance - tentativeDistance) < sqrtf(2) - 1;
 
-	if (tentativeDistance < currentDistance) {
-		int predecessor = suitablePredecessor(domainTex, pointIndex, neighIndex, neighInfo.predecessor, rows, cols);
+	float distToPredecessor = indexDistance(pointIndex, pointInfo.predecessor, cols);
+	float distToPotentialPred = indexDistance(pointIndex, predecessor, cols);
+
+	if ((similarEnough && distToPotentialPred < distToPredecessor)
+		|| (!similarEnough && tentativeDistance < currentDistance)) {
 
 		MapElement newInfo{ tentativeDistance, predecessor, neighInfo.source };
 
@@ -141,9 +147,9 @@ __device__ int suitablePredecessor(cudaTextureObject_t domainTex, int pointIndex
 	indexToCoords(pointIndex, currentX, currentY, cols);
 
 	bool neighIsCorner = tex2D<int>(domainTex, neighX, neighY);
-	bool neighPredIsVisible = visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY);
+//	bool neighPredIsVisible = visibilityTest(domainTex, rows, cols, predX, predY, currentX, currentY);
 
-	if (neighIsCorner || !neighPredIsVisible)
+	if (neighIsCorner /* || !neighPredIsVisible*/)
 		return neighIndex;
 	else
 		return neighPredecessorIndex;
@@ -159,14 +165,18 @@ __global__ void EEDT(MapElement* coverageMap, bool* globalChanges, int rows, int
 	int tid = coordsToIndex(tidX, tidY, cols);
 	MapElement pointInfo = coverageMap[tid];
 
-	if (pointInfo.distance > 0 && pointInfo.distance < (radius + FLT_MIN) ) {
+	float radiusOvershoot = radius / 0.9;
+
+	if (pointInfo.distance < radiusOvershoot + FLT_MIN) {
 		float exactDistance = computeDistance(coverageMap, tid, cols);
 
-		if (exactDistance != -1 && exactDistance < pointInfo.distance) {
+		if (exactDistance < radius + FLT_MIN) {
 			coverageMap[tid].distance = exactDistance;
 
-			*globalChanges = true;
+			*globalChanges = false;
 		}
+		else 
+			coverageMap[tid].distance = radiusOvershoot + FLT_MIN;
 	}
 }
 

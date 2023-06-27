@@ -80,7 +80,10 @@ void IO::writeCoverageMap(const MapElement* distanceMap, int rows, int cols, std
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
 			outFileD << std::setprecision(4) << std::setw(5) << distanceMap[i * cols + j].distance << " ";
-			outFileS << std::setprecision(4) << std::setw(8) << distanceMap[i * cols + j].predecessor << " ";
+			if (distanceMap[i * cols +j].predecessor != -1  && distanceMap[distanceMap[i * cols + j].predecessor].distance == 0)
+				outFileS << std::setprecision(4) << std::setw(8) << distanceMap[i * cols + j].predecessor << " ";
+			else 
+				outFileS << std::setprecision(4) << std::setw(8) << "-1";
 		}
 		outFileD << std::endl;
 		outFileS << std::endl;

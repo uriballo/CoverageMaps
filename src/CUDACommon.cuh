@@ -118,7 +118,7 @@ __device__ __inline__ bool checkIfCorner(const float* grayscaleImage, const int 
 			int neighIndex = coordsToIndex(newX, newY, cols);
 
 			if (inBounds)
-				if (grayscaleImage[neighIndex] <= 127.5f) { // Check if the intensity of the neighboring pixel is less than or equal to 127.5 (Wall)
+				if (grayscaleImage[neighIndex] <= 50.0f) { // Check if the intensity of the neighboring pixel is less than or equal to 127.5 (Wall)
 					wallHits++;
 
 					if (i * j != 0)
@@ -265,14 +265,14 @@ __device__ __inline__ void pickColor2(int sourceIndex, int* sourceDistribution, 
 	int normalizedId = j % 10;
 	switch (normalizedId) {
 	case 0:
-		R = 108;
-		G = 61;
-		B = 62;
+		R = 0;
+		G = 124;
+		B = 190;
 		break;
 	case 1:
-		R = 131;
-		G = 93;
-		B = 86;
+		R = 6;
+		G = 39;
+		B = 38;
 		break;
 	case 2:
 		R = 154;

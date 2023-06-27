@@ -319,7 +319,7 @@ namespace CUDACoverageMaps {
 			this->customDistributionTB->Font = (gcnew System::Drawing::Font(L"Segoe UI", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
 			this->customDistributionTB->Location = System::Drawing::Point(311, 224);
-			this->customDistributionTB->MaxLength = 60;
+			this->customDistributionTB->MaxLength = 99999;
 			this->customDistributionTB->Name = L"customDistributionTB";
 			this->customDistributionTB->Size = System::Drawing::Size(342, 34);
 			this->customDistributionTB->TabIndex = 9;
@@ -453,6 +453,7 @@ namespace CUDACoverageMaps {
 				static_cast<System::Byte>(0)));
 			this->numGenerations->Increment = System::Decimal(gcnew cli::array< System::Int32 >(4) { 10, 0, 0, 0 });
 			this->numGenerations->Location = System::Drawing::Point(67, 423);
+			this->numGenerations->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 1000, 0, 0, 0 });
 			this->numGenerations->Name = L"numGenerations";
 			this->numGenerations->Size = System::Drawing::Size(101, 34);
 			this->numGenerations->TabIndex = 33;

@@ -32,38 +32,39 @@ double parallelBellmanFord2(SystemParameters& config, cudaTextureObject_t domain
 
 	MapElement* intermediateResult = new MapElement[numElements];
 	bool storeData = config.storeIterCoverage;
-
-	do {
-		int innerIterations = 1;
-
+	for (int i = 0; i <= 0; i++) {
 		do {
+			int innerIterations = 1;
+
+			do {
+				CUDA::set(deviceFlag, false);
+				euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (domainTexture, deviceCoverageMap, deviceFlag, rows, cols, radius);
+				CUDA::sync();
+				CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
+
+				if (storeData) {
+					CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
+					std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
+					IO::writeCoverageMap(intermediateResult, rows, cols, fileName);
+					innerIterations++;
+				}
+			} while (hostFlag);
+
 			CUDA::set(deviceFlag, false);
-			euclideanExpansion << <blocksPerGrid, threadsPerBlock >> > (domainTexture, deviceCoverageMap, deviceFlag, rows, cols, radius);
+			EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, deviceFlag, rows, cols, radius);
 			CUDA::sync();
 			CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
 
 			if (storeData) {
 				CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
+
 				std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
 				IO::writeCoverageMap(intermediateResult, rows, cols, fileName);
-				innerIterations++;
 			}
+			iterations++;
+
 		} while (hostFlag);
-
-		CUDA::set(deviceFlag, false);
-		EEDT << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, deviceFlag, rows, cols, radius);
-		CUDA::sync();
-		CUDA::copyDeviceToHost(&hostFlag, deviceFlag, 1);
-
-		if (storeData) {
-			CUDA::copyDeviceToHost(intermediateResult, deviceCoverageMap, numElements);
-
-			std::string fileName = "iteration_" + std::to_string(iterations) + "." + std::to_string(innerIterations);
-			IO::writeCoverageMap(intermediateResult, rows, cols, fileName);
-		}
-		iterations++;
-
-	} while (hostFlag);
+	}
 
 	config.solutionData += "Total iterations: " + std::to_string(iterations) + "\n\n";
 

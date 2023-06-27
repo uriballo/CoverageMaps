@@ -70,7 +70,9 @@ void COVERAGE::setupCoverageMap(MapElement* deviceCoverageMap, std::vector<int> 
 	dim3 threadsPerBlock(16, 16);
 	dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-	initializeCoverageMap << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, radius + FLT_MIN, -1, deviceServices, numServices, numElements, cols);
+	float radiusOvershoot = radius / 0.9;
+
+	initializeCoverageMap << <blocksPerGrid, threadsPerBlock >> > (deviceCoverageMap, radiusOvershoot + FLT_MIN, -1, deviceServices, numServices, numElements, cols);
 	CUDA::sync();
 }
 

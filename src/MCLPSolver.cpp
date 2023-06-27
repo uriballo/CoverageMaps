@@ -22,8 +22,8 @@ Individual MCLPSolver::solve(){
 	std::cout << "[>] Initiating evolution process\n" << std::endl;
 
 	while (currentGeneration < _numGenerations && fittestIndividual.fitness < _stopThreshold) {
-		//std::cout << "[~] Generation " << currentGeneration + 1 << ":" << std::endl;
-		std::cout << currentGeneration + 1;
+		std::cout << "[~] Generation " << currentGeneration + 1 << ":" << std::endl;
+	//	std::cout << currentGeneration + 1;
 		int numParents = _populationSize % 2 == 0  ? 1 + _populationSize / 2 : _populationSize / 2;
 		std::vector<Individual> parents = selection(numParents);
 		std::vector<Individual> children;
@@ -60,8 +60,8 @@ Individual MCLPSolver::solve(){
 		updatePopulationFitness();
 		sortPopulation();
 		fittestIndividual = _population[0];
-		//std::cout << "\t[!] Best individual's coverage: " << fittestIndividual.fitness << "%" << std::endl;
-		std::cout <<","<< fittestIndividual.fitness << std::endl;
+		std::cout << "\t[!] Best individual's coverage: " << fittestIndividual.fitness << "%" << std::endl;
+	//	std::cout <<","<< fittestIndividual.fitness << std::endl;
 		++currentGeneration;
 	}
 	std::cout << "[!] Evolution process completed." << std::endl;
